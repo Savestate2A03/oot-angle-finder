@@ -283,15 +283,15 @@ else:
         pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
 starting_angles    = [
-    0x1111, 0x2222, 0x3333, 0x4444
+    0x2222
 ]
 
 destination_angles = [
-    0x1234, 0x5678, 0x9abc, 0xdef0, 0xacab
+    0xdad0
 ]
 
 stop_after_first_match = False
-max_ess = 8
+max_ess = 0
 types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
