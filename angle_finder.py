@@ -102,7 +102,7 @@ def ess_up(angle):
             return camera_angles[index] & 0xffff
         index += 1
 
-def search_for(graph, types, max_ess, starting_angles, destination_angles):
+def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match):
     for starting_angle in starting_angles:
         graph[starting_angle]['distance'] = 0
         graph[starting_angle]['parent'] = None
@@ -154,6 +154,10 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles):
                         instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
                         traverse_node = traverse_node['parent']
                     destination_angles.remove(neighbor['value'])
+                    if stop_after_first_match:
+                        searching = False
+                        instructions.append(f"--------------")
+                        break
 
                 if len(destination_angles) == 0:
                     searching = False
@@ -274,11 +278,16 @@ else:
     with open('graph.pickle', 'wb') as f:
         pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
-starting_angles    = [0x0000, 0xc000, 0x8000, 0x4000]
-destination_angles = [0x697d]
+starting_angles    = [
+    0x0000, 0xc001, 0x8000, 0x4000,
+    0x408f, 0xf546, 0x1c88, 0x07ef
+]
 
-max_ess = 28
-types   = ['sword', 'no_carry', 'shield_corner']
+destination_angles = [0x1234, 0xacab, 0xfedc, 0xabcd, 0x0005]
+
+stop_after_first_match = False
+max_ess = 8
+types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
-search_for(graph, types, max_ess, starting_angles, destination_angles)
+search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match)
