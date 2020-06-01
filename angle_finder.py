@@ -90,13 +90,14 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles):
         graph[starting_angle]['seen'] = 'True'
 
     searching = True
+    instructions = []
 
     while searching:
         # select unvisited node with smallest distance
         current_node = min(graph, 
             key=lambda node: node['distance'] if not node['visited'] else 10000)
 
-        print("checking {0:#0{1}x}...".format(graph.index(current_node), 6) + f" distance: {current_node['distance']}")
+        print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + f" distance: {current_node['distance']} ({len(destination_angles)} left to find)")
 
         current_node['visited'] = True
 
@@ -127,15 +128,21 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles):
 
                 if neighbor['value'] in destination_angles:
                     traverse_node = graph[neighbor['value']]
-                    print(f"found! distance: {traverse_node['distance']}")
-                    instructions = []
+                    print(f"found ! distance: {traverse_node['distance']}")
+                    instructions.append(f"--------------")
                     while traverse_node:
                         instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
                         traverse_node = traverse_node['parent']
-                    for instruction in instructions[::-1]:
-                        print(instruction)
+                    destination_angles.remove(neighbor['value'])
+
+                if len(destination_angles) == 0:
                     searching = False
+                    instructions.append(f"--------------")
                     break
+
+    print("finished searching for all destinations !")
+    for instruction in instructions[::-1]:
+        print(instruction)
 
 with open('camera_favored.txt', 'r') as f:
     lines = f.readlines()
@@ -230,7 +237,7 @@ else:
 starting_angles    = [0x0000, 0xc001, 0x8000, 0x4000]
 destination_angles = [0xacab, 0x1312]
 
-max_ess = 4
+max_ess = 8
 types   = ['no_carry', 'sword']
 # types = ['sword', 'biggoron', 'no_carry']
 
