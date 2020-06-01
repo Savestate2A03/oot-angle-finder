@@ -40,6 +40,26 @@ def back_roll(angle):
 def backflip_roll(angle):
     return (angle - 0x3a98) & 0xffff
 
+def shield_topright(angle):
+    angle = ess_up(angle)
+    if not angle: return False
+    return (angle - 0x2000) & 0xffff
+
+def shield_topleft(angle):
+    angle = ess_up(angle)
+    if not angle: return False
+    return (angle + 0x2000) & 0xffff
+
+def shield_bottomleft(angle):
+    angle = ess_up(angle)
+    if not angle: return False
+    return (angle + 0x6000) & 0xffff
+
+def shield_bottomright(angle):
+    angle = ess_up(angle)
+    if not angle: return False
+    return (angle - 0x6000) & 0xffff
+
 def ess_up(angle):
 
     # camera bullshit good lord 
@@ -229,16 +249,36 @@ else:
             'value': backflip_roll(angle),
             'type': 'no_carry'
         })
+        node['neighbors'].append({
+            'description': 'top right shield turn',
+            'value': shield_topright(angle),
+            'type': 'shield_corner'
+        })
+        node['neighbors'].append({
+            'description': 'top left shield turn',
+            'value': shield_topleft(angle),
+            'type': 'shield_corner'
+        })
+        node['neighbors'].append({
+            'description': 'bottom right shield turn',
+            'value': shield_bottomright(angle),
+            'type': 'shield_corner'
+        })
+        node['neighbors'].append({
+            'description': 'bottom left shield turn',
+            'value': shield_bottomleft(angle),
+            'type': 'shield_corner'
+        })
         graph.append(node)
         print(hex(angle))
     with open('graph.pickle', 'wb') as f:
-        pickle.dump(graph, f, pickle.DEFAULT_PROTOCOL)
+        pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
-starting_angles    = [0x0000, 0xc001, 0x8000, 0x4000]
-destination_angles = [0xacab, 0x1312]
+starting_angles    = [0x0000, 0xc000, 0x8000, 0x4000]
+destination_angles = [0x697d]
 
-max_ess = 8
-types   = ['no_carry', 'sword']
-# types = ['sword', 'biggoron', 'no_carry']
+max_ess = 28
+types   = ['sword', 'no_carry', 'shield_corner']
+# types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
 search_for(graph, types, max_ess, starting_angles, destination_angles)
