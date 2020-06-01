@@ -103,23 +103,26 @@ def ess_up(angle):
         index += 1
 
 def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match):
+    seen = []
+
     for starting_angle in starting_angles:
         graph[starting_angle]['distance'] = 0
         graph[starting_angle]['parent'] = None
         graph[starting_angle]['methodology'] = 'base angle'
         graph[starting_angle]['seen'] = 'True'
+        seen.append(graph[starting_angle])
 
     searching = True
     instructions = []
 
     while searching:
         # select unvisited node with smallest distance
-        current_node = min(graph, 
-            key=lambda node: node['distance'] if not node['visited'] else 10000)
+        current_node = min(seen, key=lambda node: node['distance'])
 
         print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + f" distance: {current_node['distance']} ({len(destination_angles)} left to find)")
 
         current_node['visited'] = True
+        seen.remove(current_node)
 
         for neighbor in current_node['neighbors']:
             if graph[neighbor['value']]['seen']: continue
@@ -133,6 +136,7 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
                     graph[neighbor['value']]['parent']      = current_node
                     graph[neighbor['value']]['methodology'] = neighbor['description']
                     graph[neighbor['value']]['seen']        = True
+                    seen.append(graph[neighbor['value']])
                 except:
                     pass
 
@@ -279,11 +283,12 @@ else:
         pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
 starting_angles    = [
-    0x0000, 0xc001, 0x8000, 0x4000,
-    0x408f, 0xf546, 0x1c88, 0x07ef
+    0x1111, 0x2222, 0x3333, 0x4444
 ]
 
-destination_angles = [0x1234, 0xacab, 0xfedc, 0xabcd, 0x0005]
+destination_angles = [
+    0x1234, 0x5678, 0x9abc, 0xdef0, 0xacab
+]
 
 stop_after_first_match = False
 max_ess = 8
