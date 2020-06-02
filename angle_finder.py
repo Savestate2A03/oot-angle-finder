@@ -404,7 +404,7 @@ destination_angles = [
     0x1111, 0xacab, 0x9876
 ]
 
-max_ess = 28
+max_ess = 8
 types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
