@@ -16,7 +16,7 @@
   },
   "include": [
     "js/camera_favored.ts",
-    "js/pure_js.ts",
+    "js/angle_finder.ts",
     "js/main.ts"
   ]
 }

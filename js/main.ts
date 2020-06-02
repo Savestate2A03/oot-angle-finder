@@ -1,7 +1,16 @@
-import {generateFastestPaths, generateGraph, pathForDest} from './pure_js.js';
+import {
+    generateFastestPaths, generateGraph, pathForDest, SETTINGS
+} from './angle_finder.js';
 
 let graph;
+
 function calculate() {
+    SETTINGS.ESS_COUNT = Number((document.getElementById("ess_count") as HTMLInputElement).value);
+    SETTINGS.SWORD_ENABLED = (document.getElementById("sword_enabled") as HTMLInputElement).checked;
+    SETTINGS.BIGGORON_ENABLED = (document.getElementById("biggoron_enabled") as HTMLInputElement).checked;
+    SETTINGS.NO_CARRY_ENABLED = (document.getElementById("no_carry_enabled") as HTMLInputElement).checked;
+    SETTINGS.SHIELD_CORNER_ENABLED = (document.getElementById("shield_enabled") as HTMLInputElement).checked;
+
     const src_value = (document.getElementById("src_angles") as HTMLTextAreaElement).value;
     const src_angles = src_value.split('\n').map(v => Number.parseInt(v.trim(), 16) & 0xFFFF);
     const dest_value = (document.getElementById("dest_angle") as HTMLInputElement).value;
@@ -16,7 +25,9 @@ function calculate() {
 
     async function delay<T>(fn: () => T): Promise<T> {
         return new Promise<T>(function (resolve) {
-            setTimeout(() => resolve(fn()), 10)
+            requestAnimationFrame(() => {
+                requestAnimationFrame(()=> resolve(fn()));
+            });
         });
     }
 
@@ -52,5 +63,16 @@ function calculate() {
     })
 }
 
-console.log("adding listener???");
-document.getElementById("calc_button").addEventListener('click', () => calculate());
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("Adding listeners")
+    function clearGraph() {
+        console.log("Clearing graph");
+        graph = null;
+    }
+    document.getElementById("calc_button").addEventListener('click', () => calculate());
+    document.getElementById("ess_count").addEventListener('change', clearGraph);
+    document.getElementById("sword_enabled").addEventListener('change', clearGraph);
+    document.getElementById("biggoron_enabled").addEventListener('change', clearGraph);
+    document.getElementById("no_carry_enabled").addEventListener('change', clearGraph);
+    document.getElementById("shield_enabled").addEventListener('change', clearGraph);
+});

@@ -1,8 +1,10 @@
-let ESS_COUNT = 8;
-let SWORD_ENABLED = true;
-let BIGGORON_ENABLED = false;
-let NO_CARRY_ENABLED = true;
-let SHIELD_CORNER_ENABLED = false;
+export let SETTINGS = {
+    ESS_COUNT: 8,
+    SWORD_ENABLED: true,
+    BIGGORON_ENABLED: false,
+    NO_CARRY_ENABLED: true,
+    SHIELD_CORNER_ENABLED: false,
+};
 
 import {FAVORED_ANGLES} from './camera_favored.js';
 
@@ -378,7 +380,7 @@ function generateNode(a: number): GraphNode {
         });
     }
 
-    for (let count = 1; count <= ESS_COUNT; count++) {
+    for (let count = 1; count <= SETTINGS.ESS_COUNT; count++) {
         n.neighbors.push({
             movementType: {type: MovementType_Type.ess_left, count: count},
             value: ess_left(a, count)
@@ -411,7 +413,7 @@ function generateNode(a: number): GraphNode {
     }
 
     // Stuff you can do if you're not carrying anything
-    if (NO_CARRY_ENABLED) {
+    if (SETTINGS.NO_CARRY_ENABLED) {
         n.neighbors.push({
             movementType: {type: MovementType_Type.sidehop_roll_left},
             value: sidehop_roll_left(a)
@@ -430,14 +432,14 @@ function generateNode(a: number): GraphNode {
         });
     }
 
-    if (SWORD_ENABLED) {
+    if (SETTINGS.SWORD_ENABLED) {
         n.neighbors.push({
             movementType: {type: MovementType_Type.kokiri_spin},
             value: kokiri_spin(a)
         });
     }
 
-    if (BIGGORON_ENABLED) {
+    if (SETTINGS.BIGGORON_ENABLED) {
         n.neighbors.push({
             movementType: {type: MovementType_Type.biggoron_spin},
             value: biggoron_spin(a)
@@ -448,7 +450,7 @@ function generateNode(a: number): GraphNode {
         });
     }
 
-    if (SHIELD_CORNER_ENABLED) {
+    if (SETTINGS.SHIELD_CORNER_ENABLED) {
         let _shield_topright = shield_topright(a);
         if (_shield_topright !== null) {
             n.neighbors.push({
@@ -568,7 +570,11 @@ export function pathForDest(backPath: Uint16Array, dest: number) {
                 count = neighbor.movementType.count;
             }
         }
-        res.push(`${nameForType(t)} x${count} to ${formatHex(currentAngle)}`);
+        if (count) {
+            res.push(`${nameForType(t)} x${count} to ${formatHex(currentAngle)}`);
+        } else {
+            res.push(`${nameForType(t)} to ${formatHex(currentAngle)}`);
+        }
         previousAngle = currentAngle;
     }
 
