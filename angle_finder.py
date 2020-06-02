@@ -291,7 +291,7 @@ destination_angles = [
 ]
 
 stop_after_first_match = False
-max_ess = 0
+max_ess = 8
 types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
