@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+     "lib": ["ESNext","DOM"],                             /* Specify library files to be included in the compilation. */
+     "allowJs": true,
+     "checkJs": true,
+//     "outFile": "./js/pure_js.js",
+      "outDir": "js/dist",
+     "removeComments": false,
+     "allowUmdGlobalAccess": true,
+     "inlineSourceMap": true,
+     "inlineSources": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "js/camera_favored.ts",
+    "js/pure_js.ts",
+    "js/main.ts"
+  ]
+}
