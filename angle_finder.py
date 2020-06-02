@@ -254,162 +254,164 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
 
 # ----------------------------------------------------------------------
 
-with open('camera_favored.txt', 'r') as f:
-    lines = f.readlines()
-    camera_angles = []
-    for line in lines:
-        # process each camera angle as a hex number
-        camera_angles.append(int(line.strip(), 16)) 
+if __name__ == '__main__':
+    # don't run on server
+    with open('camera_favored.txt', 'r') as f:
+        lines = f.readlines()
+        camera_angles = []
+        for line in lines:
+            # process each camera angle as a hex number
+            camera_angles.append(int(line.strip(), 16)) 
 
-generate_graph = False
+    generate_graph = False
 
-# generate graph
-graph = []
-if not generate_graph:
-    with open('graph.pickle', 'rb') as f:
-        graph = pickle.load(f)
-else:
-    print("Generating graph up to 0xFFFF ...")
-    for angle in range(0x10000):
-        node = { 
-            'neighbors': [],
-            'visited': False,
-            'seen': False,
-            'distance': 10000,
-            'parent': None,
-            'methodology': ''
-        }
-        node['neighbors'].append({
-            'description': "ess up",
-            'value': ess_up_adjust(angle),
-            'type': '',
-            'adjustment': True
-        })
-        # search up to 28 left and right
-        # any more won't seralize properly (but can be done for a single run)
-        for ess_amt in range(29):
+    # generate graph
+    graph = []
+    if not generate_graph:
+        with open('graph.pickle', 'rb') as f:
+            graph = pickle.load(f)
+    else:
+        print("Generating graph up to 0xFFFF ...")
+        for angle in range(0x10000):
+            node = { 
+                'neighbors': [],
+                'visited': False,
+                'seen': False,
+                'distance': 10000,
+                'parent': None,
+                'methodology': ''
+            }
             node['neighbors'].append({
-                'description': f"ess left x{ess_amt}",
-                'value': ess(angle, True, ess_amt),
+                'description': "ess up",
+                'value': ess_up_adjust(angle),
                 'type': '',
+                'adjustment': True
+            })
+            # search up to 28 left and right
+            # any more won't seralize properly (but can be done for a single run)
+            for ess_amt in range(29):
+                node['neighbors'].append({
+                    'description': f"ess left x{ess_amt}",
+                    'value': ess(angle, True, ess_amt),
+                    'type': '',
+                    'adjustment': False
+                })
+                node['neighbors'].append({
+                    'description': f"ess right x{ess_amt}",
+                    'value': ess(angle, False, ess_amt),
+                    'type': '',
+                    'adjustment': False
+                })
+            node['neighbors'].append({
+                'description': "turn left",
+                'value': turn(angle, True),
+                'type': '',
+                'adjustment': True
+            })
+            node['neighbors'].append({
+                'description': "turn right",
+                'value': turn(angle, False),
+                'type': '',
+                'adjustment': True
+            })
+            node['neighbors'].append({
+                'description': "turn 180",
+                'value': turn_180(angle),
+                'type': '',
+                'adjustment': True
+            })
+            node['neighbors'].append({
+                'description': "sidehop roll left",
+                'value': sidehop_sideroll(angle, True),
+                'type': 'no_carry',
                 'adjustment': False
             })
             node['neighbors'].append({
-                'description': f"ess right x{ess_amt}",
-                'value': ess(angle, False, ess_amt),
-                'type': '',
+                'description': "sidehop roll right",
+                'value': sidehop_sideroll(angle, False),
+                'type': 'no_carry',
                 'adjustment': False
             })
-        node['neighbors'].append({
-            'description': "turn left",
-            'value': turn(angle, True),
-            'type': '',
-            'adjustment': True
-        })
-        node['neighbors'].append({
-            'description': "turn right",
-            'value': turn(angle, False),
-            'type': '',
-            'adjustment': True
-        })
-        node['neighbors'].append({
-            'description': "turn 180",
-            'value': turn_180(angle),
-            'type': '',
-            'adjustment': True
-        })
-        node['neighbors'].append({
-            'description': "sidehop roll left",
-            'value': sidehop_sideroll(angle, True),
-            'type': 'no_carry',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': "sidehop roll right",
-            'value': sidehop_sideroll(angle, False),
-            'type': 'no_carry',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': "kokiri/master spin shield cancel",
-            'value': kokiri_spin(angle),
-            'type': 'sword',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': "biggoron slash shield cancel",
-            'value': biggoron_spin(angle),
-            'type': 'biggoron',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': "biggoron spin shield cancel",
-            'value': biggoron_spin_shield(angle),
-            'type': 'biggoron',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': "ess down sideroll",
-            'value': ess_down_sideroll(angle),
-            'type': 'no_carry',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': "backflip roll",
-            'value': backflip_sideroll(angle),
-            'type': 'no_carry',
-            'adjustment': False
-        })
-        node['neighbors'].append({
-            'description': 'top right shield turn',
-            'value': shield_topright(angle),
-            'type': 'shield_corner',
-            'adjustment': True
-        })
-        node['neighbors'].append({
-            'description': 'top left shield turn',
-            'value': shield_topleft(angle),
-            'type': 'shield_corner',
-            'adjustment': True
-        })
-        node['neighbors'].append({
-            'description': 'bottom right shield turn',
-            'value': shield_bottomright(angle),
-            'type': 'shield_corner',
-            'adjustment': True
-        })
-        node['neighbors'].append({
-            'description': 'bottom left shield turn',
-            'value': shield_bottomleft(angle),
-            'type': 'shield_corner',
-            'adjustment': True
-        })
-        for neighbor in node['neighbors']:
-            # alert about potential target + ess up in some cases
-            if ((neighbor['value'] >= 0xf55f) or (neighbor['value'] >= 0xb43f and neighbor['value'] < 0xc000)) and neighbor['adjustment']:
-                neighbor['description'] = f"(may need target + tap up after) {neighbor['description']}"
-        graph.append(node)
-        if (angle % 512 == 0): # only print results ocassionally 
-            print(hex(angle))
-    try:
-        with open('graph.pickle', 'wb') as f:
-            pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
-    except:
-        print("Failed to write graph") # can happen on large dumps
+            node['neighbors'].append({
+                'description': "kokiri/master spin shield cancel",
+                'value': kokiri_spin(angle),
+                'type': 'sword',
+                'adjustment': False
+            })
+            node['neighbors'].append({
+                'description': "biggoron slash shield cancel",
+                'value': biggoron_spin(angle),
+                'type': 'biggoron',
+                'adjustment': False
+            })
+            node['neighbors'].append({
+                'description': "biggoron spin shield cancel",
+                'value': biggoron_spin_shield(angle),
+                'type': 'biggoron',
+                'adjustment': False
+            })
+            node['neighbors'].append({
+                'description': "ess down sideroll",
+                'value': ess_down_sideroll(angle),
+                'type': 'no_carry',
+                'adjustment': False
+            })
+            node['neighbors'].append({
+                'description': "backflip roll",
+                'value': backflip_sideroll(angle),
+                'type': 'no_carry',
+                'adjustment': False
+            })
+            node['neighbors'].append({
+                'description': 'top right shield turn',
+                'value': shield_topright(angle),
+                'type': 'shield_corner',
+                'adjustment': True
+            })
+            node['neighbors'].append({
+                'description': 'top left shield turn',
+                'value': shield_topleft(angle),
+                'type': 'shield_corner',
+                'adjustment': True
+            })
+            node['neighbors'].append({
+                'description': 'bottom right shield turn',
+                'value': shield_bottomright(angle),
+                'type': 'shield_corner',
+                'adjustment': True
+            })
+            node['neighbors'].append({
+                'description': 'bottom left shield turn',
+                'value': shield_bottomleft(angle),
+                'type': 'shield_corner',
+                'adjustment': True
+            })
+            for neighbor in node['neighbors']:
+                # alert about potential target + ess up in some cases
+                if ((neighbor['value'] >= 0xf55f) or (neighbor['value'] >= 0xb43f and neighbor['value'] < 0xc000)) and neighbor['adjustment']:
+                    neighbor['description'] = f"(may need target + tap up after) {neighbor['description']}"
+            graph.append(node)
+            if (angle % 512 == 0): # only print results ocassionally 
+                print(hex(angle))
+        try:
+            with open('graph.pickle', 'wb') as f:
+                pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
+        except:
+            print("Failed to write graph") # can happen on large dumps
 
-starting_angles    = [
-    0x0000, 0x4000, 0x8000, 0xc001
-]
+    starting_angles    = [
+        0x0000, 0x4000, 0x8000, 0xc001
+    ]
 
-destination_angles = [
-    0x0419, 0xacab
-]
+    destination_angles = [
+        0x2332, 0x1234, 0xacab
+    ]
 
-max_ess = 10
-types   = ['sword', 'no_carry']
-# types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
+    max_ess = 10
+    types   = ['sword', 'no_carry']
+    # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
-stop_after_first_match = False
-full_search = False
+    stop_after_first_match = False
+    full_search = False
 
-search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search)
+    search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search)
