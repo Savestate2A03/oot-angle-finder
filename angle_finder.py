@@ -1,23 +1,96 @@
 import sys
 import pickle
+import math
+import io
+import shutil
 
-# rounds up to next camera angle at e->f
-
-# camera favored angles that end in f 
-# will actually go to the next camera favored
-# you can chain these together with ess up + targets
-# until you hit a non xxxF camera angle
+# basic movement options
 
 def ess(angle, left, amt):
     return (((angle + 0x0708*amt) if left else (angle - 0x0708*amt)) & 0xffff)
 
+# generally just ess up, but also considered adjusting
+# the camera when turning left / right / 180
+def ess_up_adjust(angle):
+
+    # camera bullshit as determined by manual testing
+
+    # don't bother, these just snap to 0x4000 and 0x8000
+    if ((angle >= 0x385f and angle < 0x4000) or
+       (angle >= 0x794f and angle < 0x8000)):
+       return False
+
+    # these gravitate towards 0xff91
+    if (angle >= 0xff5f and angle < 0xff8f):
+        return 0xff91
+
+    # these gravitate towards 0xbe81
+    if (angle >= 0xbe4f and angle < 0xbe7f):
+        return 0xbe81
+
+    # these gravitate towards 0xbec1
+    if (angle >= 0xbe7f and angle < 0xbebf):
+        return 0xbec1
+
+    # these snap to 0xc001
+    if (angle >= 0xbebf and angle < 0xc001):
+        return False
+
+    # these snap to 0x0000
+    if (angle >= 0xff8f): 
+        return False
+
+    global camera_angles
+    angle_hex = "{0:#0{1}x}".format(angle, 6) # 0xabcd
+    for index in range(len(camera_angles)):
+        camera_angle_hex = "{0:#0{1}x}".format(camera_angles[index], 6) # 0xabcd
+        if camera_angle_hex[:5] >= angle_hex[:5]:
+            # more camera bullshit go to hell
+            if angle >= 0xf55f and angle < 0xf8bf and angle_hex[5:] == "f":
+                index += 1 # if we're in the above range and last char is f
+            if angle >= 0xf8bf:
+                index += 1 # however this happens automatically when above 0xf8bf
+            if angle >= 0xb43f and angle < 0xb85f and angle_hex[5:] == "f":
+                index += 1 # samething but for another value range
+            if angle >= 0xb85f and angle < 0xc001:
+                index += 1 # automatic again
+            if angle_hex[5:] == "f":
+                # snapping up happens on the f threshold apparently
+                return camera_angles[index+1] & 0xffff 
+            return camera_angles[index] & 0xffff
+        index += 1
+
 def turn(angle, left):
-    angle = ess_up(angle)
+    angle = ess_up_adjust(angle) # camera auto adjusts similar to ess up
     if not angle: return False
     return ((angle + 0x4000 if left else angle - 0x4000) & 0xffff)
 
-def sidehop_roll(angle, left):
+def turn_180(angle):
+    angle = ess_up_adjust(angle) # camera auto adjusts similar to ess up
+    if not angle: return False
+    return (angle + 0x8000) & 0xffff
+
+# no_carry movement options. these can be 
+# executed when Link isn't holding anything
+
+def sidehop_sideroll(angle, left):
     return ((angle + 0x1cd8 if left else angle - 0x1cd8) & 0xffff)
+
+def ess_down_sideroll(angle):
+    left = True
+    camera_angle = ess_up_adjust(angle)
+    # link always rolls right when the camera is auto snapping
+    if not camera_angle:
+        left = False
+    elif camera_angle >= angle: # left / right depends on camera
+        left = False
+    return ((angle + 0x3a98 if left else angle - 0x3a98) & 0xffff)
+
+# forces a right roll even if ess down roll goes left
+def backflip_sideroll(angle):
+    return (angle - 0x3a98) & 0xffff
+
+# sword-related movement
 
 def kokiri_spin(angle):
     return (angle - 0x0ccd) & 0xffff 
@@ -28,129 +101,95 @@ def biggoron_spin(angle):
 def biggoron_spin_shield(angle):
     return (angle + 0x04f5) & 0xffff
 
-def back_roll(angle):
-    left = True
-    camera_angle = ess_up(angle)
-    if not camera_angle:
-        left = False
-    elif camera_angle >= angle:
-        left = False
-    return ((angle + 0x3a98 if left else angle - 0x3a98) & 0xffff)
-
-def backflip_roll(angle):
-    return (angle - 0x3a98) & 0xffff
-
+# perfect corner shield turns (n64 only) 
 def shield_topright(angle):
-    angle = ess_up(angle)
+    angle = ess_up_adjust(angle)
     if not angle: return False
     return (angle - 0x2000) & 0xffff
 
 def shield_topleft(angle):
-    angle = ess_up(angle)
+    angle = ess_up_adjust(angle)
     if not angle: return False
     return (angle + 0x2000) & 0xffff
 
 def shield_bottomleft(angle):
-    angle = ess_up(angle)
+    angle = ess_up_adjust(angle)
     if not angle: return False
     return (angle + 0x6000) & 0xffff
 
 def shield_bottomright(angle):
-    angle = ess_up(angle)
+    angle = ess_up_adjust(angle)
     if not angle: return False
     return (angle - 0x6000) & 0xffff
 
-def ess_up(angle):
-
-    # camera bullshit good lord 
-
-    if ((angle >= 0x385f and angle < 0x4000) or
-       (angle >= 0x794f and angle < 0x8000)):
-       return False
-
-    if (angle >= 0xff5f and angle < 0xff8f):
-        return 0xff91
-
-    if (angle >= 0xbe4f and angle < 0xbe7f):
-        return 0xbe81
-
-    if (angle >= 0xbe7f and angle < 0xbebf):
-        return 0xbec1
-
-    if (angle >= 0xbebf and angle < 0xc001):
-        return False
-
-    if (angle >= 0xff8f): 
-        return False
-
-    global camera_angles
-    angle_hex = "{0:#0{1}x}".format(angle, 6) # 0xabcd
-    for index in range(len(camera_angles)):
-        camera_angle_hex = "{0:#0{1}x}".format(camera_angles[index], 6)
-        if camera_angle_hex[:5] >= angle_hex[:5]:
-            # more camera bullshit go to hell
-            if angle >= 0xf55f and angle < 0xf8bf and angle_hex[5:] == "f":
-                index += 1
-            if angle >= 0xf8bf:
-                index += 1
-            if angle >= 0xb43f and angle < 0xb85f and angle_hex[5:] == "f":
-                index += 1
-            if angle >= 0xb85f and angle < 0xc001:
-                index += 1
-            if angle_hex[5:] == "f":
-                return camera_angles[index+1] & 0xffff
-            return camera_angles[index] & 0xffff
-        index += 1
-
-def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match):
+def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search):
     seen = []
 
     for starting_angle in starting_angles:
-        graph[starting_angle]['distance'] = 0
-        graph[starting_angle]['parent'] = None
+        graph[starting_angle]['distance']    = 0
+        graph[starting_angle]['parent']      = None
         graph[starting_angle]['methodology'] = 'base angle'
-        graph[starting_angle]['seen'] = 'True'
+        graph[starting_angle]['seen']        = 'True'
         seen.append(graph[starting_angle])
 
-    searching = True
+    searching    = True
     instructions = []
+    visited      = 0
 
     while searching:
-        # select unvisited node with smallest distance
-        current_node = min(seen, key=lambda node: node['distance'])
-
-        print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + f" distance: {current_node['distance']} ({len(destination_angles)} left to find)")
+        try:
+            # select seen node with smallest distance
+            current_node = min(seen, key=lambda node: node['distance'])
+        except ValueError:
+            print("No more seen nodes")
+            break
 
         current_node['visited'] = True
+
+        visited += 1
+        if (visited % 512 == 0): # speed up search time by only printing update ocassionally
+            print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + 
+                    f" visited {visited}/{len(graph)}, seen {len(seen)}, distance: {current_node['distance']} ({len(destination_angles)} left to find)")
+
+        # once we've visited a seen node, don't need to visit it anymore
         seen.remove(current_node)
 
+        # look at each neighbor a node has, the neighbors are read from the current graph
         for neighbor in current_node['neighbors']:
-            if graph[neighbor['value']]['seen']: continue
-            if neighbor['description'].startswith('ess left') or neighbor['description'].startswith('ess right'):
+            ess_amount = -1 # setting up weights for ess, -1 means this isn't an ess command
+            if graph[neighbor['value']]['seen']: continue # don't bother if we've seen the node
+            if 'ess left' in neighbor['description'] or 'ess right' in neighbor['description']:
+                # if we're essing left or right, grab the amount of turns for the weight and max check
                 start = neighbor['description'].index('x') + 1
-                if int(neighbor['description'][start:]) > max_ess:
+                ess_amount = int(neighbor['description'][start:])
+                if ess_amount > max_ess:
                     continue
+            # only check neighbors who are configured to be allowed
             if neighbor['type'] in types or neighbor['type'] == '':
                 try:
-                    graph[neighbor['value']]['distance']    = current_node['distance'] + 1
-                    graph[neighbor['value']]['parent']      = current_node
-                    graph[neighbor['value']]['methodology'] = neighbor['description']
-                    graph[neighbor['value']]['seen']        = True
-                    seen.append(graph[neighbor['value']])
+                    if ess_amount != -1:
+                        # every 8 ess turns is considered a single unit of weight / distance
+                        graph[neighbor['value']]['distance'] = current_node['distance'] + math.ceil(ess_amount/8)
+                    else:
+                        graph[neighbor['value']]['distance'] = current_node['distance'] + 1 
+                    graph[neighbor['value']]['parent']       = current_node
+                    graph[neighbor['value']]['methodology']  = neighbor['description']
+                    graph[neighbor['value']]['seen']         = True
+                    seen.append(graph[neighbor['value']]) # add to seen nodes for later visiting
                 except:
+                    # don't know when this would happen, maybe i added it when doing debugging ...
+                    # i'll leave it in though 
                     pass
 
-                # if neighbor['value'] in [0xbb20, 0xbb30, 0x2080, 0x2088, 0x9108]:
-                #     traverse_node = graph[neighbor['value']]
-                #     print(f"found prelim:  {traverse_node['distance']} !")
-                #     instructions = []
-                #     while traverse_node:
-                #         instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
-                #         traverse_node = traverse_node['parent']
-                #     for instruction in instructions[::-1]:
-                #         print(instruction)
+                # no need to check for specific destination angles if doing a full search
+                if full_search: 
+                    continue
 
+                # if the node we're looking at (not visiting) is one of the destination angles
+                # we're looking for, go ahead and make note of it, and stop if we're just looking
+                # for a single angle. otherwise, add it to the instructions array and carry on
                 if neighbor['value'] in destination_angles:
+                    # traverse parents until you reach a root node
                     traverse_node = graph[neighbor['value']]
                     print(f"found ! distance: {traverse_node['distance']}")
                     instructions.append(f"--------------")
@@ -163,14 +202,44 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
                         instructions.append(f"--------------")
                         break
 
+                # no more angles, finish up
                 if len(destination_angles) == 0:
                     searching = False
                     instructions.append(f"--------------")
                     break
 
-    print("finished searching for all destinations !")
-    for instruction in instructions[::-1]:
-        print(instruction)
+    if not full_search:
+        # print out results to user
+        print("finished searching for all destinations !")
+        for instruction in instructions[::-1]:
+            # print out instructions array in reverse order
+            print(instruction)
+    else:
+        # write full search to a file
+        with io.StringIO() as sio:
+            sio.write(f"full angle dump\n")
+            sio.write(f"            types: {types}\n")
+            sio.write(f"          max ess: {max_ess}\n")
+            sio.write(f"  starting angles: {', '.join('{0:#0{1}x}'.format(angle, 6) for angle in starting_angles)}\n")
+            # dumping all angles ...
+            for angle in range(0x10000):
+                if (angle % 512 == 0): # only show ocassional progress
+                    print("writing {0:#0{1}x} ... ".format(angle, 6))
+                sio.write("{0:#0{1}x}".format(angle, 6) + ":\n")
+                instructions = [] # clear out instructions array
+                traverse_node = graph[angle]
+                while traverse_node:
+                    instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
+                    traverse_node = traverse_node['parent']
+                for instruction in instructions[::-1]:
+                    # write instructions in reverse order
+                    sio.write(f"    {instruction}\n")
+            # write string buffer to file
+            with open('full_search.txt', 'w') as f:
+                sio.seek(0)
+                shutil.copyfileobj(sio, f)
+
+# ----------------------------------------------------------------------
 
 with open('camera_favored.txt', 'r') as f:
     lines = f.readlines()
@@ -187,6 +256,7 @@ if not generate_graph:
     with open('graph.pickle', 'rb') as f:
         graph = pickle.load(f)
 else:
+    print("Generating graph up to 0xFFFF ...")
     for angle in range(0x10000):
         node = { 
             'neighbors': [],
@@ -198,101 +268,135 @@ else:
         }
         node['neighbors'].append({
             'description': "ess up",
-            'value': ess_up(angle),
-            'type': ''
+            'value': ess_up_adjust(angle),
+            'type': '',
+            'adjustment': True
         })
+        # search up to 28 left and right
+        # any more won't seralize properly (but can be done for a single run)
         for ess_amt in range(29):
             node['neighbors'].append({
                 'description': f"ess left x{ess_amt}",
                 'value': ess(angle, True, ess_amt),
-                'type': ''
+                'type': '',
+                'adjustment': True
             })
             node['neighbors'].append({
                 'description': f"ess right x{ess_amt}",
                 'value': ess(angle, False, ess_amt),
-                'type': ''
+                'type': '',
+                'adjustment': True
             })
         node['neighbors'].append({
             'description': "turn left",
             'value': turn(angle, True),
-            'type': ''
+            'type': '',
+            'adjustment': True
         })
         node['neighbors'].append({
             'description': "turn right",
             'value': turn(angle, False),
-            'type': ''
+            'type': '',
+            'adjustment': True
+        })
+        node['neighbors'].append({
+            'description': "turn 180",
+            'value': turn_180(angle),
+            'type': '',
+            'adjustment': True
         })
         node['neighbors'].append({
             'description': "sidehop roll left",
-            'value': sidehop_roll(angle, True),
-            'type': 'no_carry'
+            'value': sidehop_sideroll(angle, True),
+            'type': 'no_carry',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': "sidehop roll right",
-            'value': sidehop_roll(angle, False),
-            'type': 'no_carry'
+            'value': sidehop_sideroll(angle, False),
+            'type': 'no_carry',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': "kokiri/master spin shield cancel",
             'value': kokiri_spin(angle),
-            'type': 'sword'
+            'type': 'sword',
+            'adjustment': False
         })
         node['neighbors'].append({
-            'description': "biggoron spin",
+            'description': "biggoron slash shield cancel",
             'value': biggoron_spin(angle),
-            'type': 'biggoron'
+            'type': 'biggoron',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': "biggoron spin shield cancel",
             'value': biggoron_spin_shield(angle),
-            'type': 'biggoron'
+            'type': 'biggoron',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': "ess down sideroll",
-            'value': back_roll(angle),
-            'type': 'no_carry'
+            'value': ess_down_sideroll(angle),
+            'type': 'no_carry',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': "backflip roll",
-            'value': backflip_roll(angle),
-            'type': 'no_carry'
+            'value': backflip_sideroll(angle),
+            'type': 'no_carry',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': 'top right shield turn',
             'value': shield_topright(angle),
-            'type': 'shield_corner'
+            'type': 'shield_corner',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': 'top left shield turn',
             'value': shield_topleft(angle),
-            'type': 'shield_corner'
+            'type': 'shield_corner',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': 'bottom right shield turn',
             'value': shield_bottomright(angle),
-            'type': 'shield_corner'
+            'type': 'shield_corner',
+            'adjustment': False
         })
         node['neighbors'].append({
             'description': 'bottom left shield turn',
             'value': shield_bottomleft(angle),
-            'type': 'shield_corner'
+            'type': 'shield_corner',
+            'adjustment': False
         })
+        for neighbor in node['neighbors']:
+            # alert about potential target + ess up in some cases
+            if ((neighbor['value'] >= 0xf55f) or (neighbor['value'] >= 0xb43f and neighbor['value'] < 0xc000)) and neighbor['adjustment']:
+                neighbor['description'] = f"(may need target + tap up after) {neighbor['description']}"
         graph.append(node)
-        print(hex(angle))
-    with open('graph.pickle', 'wb') as f:
-        pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
+        if (angle % 512 == 0): # only print results ocassionally 
+            print(hex(angle))
+    try:
+        with open('graph.pickle', 'wb') as f:
+            pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
+    except:
+        print("Failed to write graph") # can happen on large dumps
 
 starting_angles    = [
-    0x1234
+    0x0000, 0x4000, 0x8000, 0xc001
 ]
 
 destination_angles = [
-    0xe001, 0xacab
+    0x1111, 0xacab, 0x9876
 ]
 
-stop_after_first_match = False
 max_ess = 8
 types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
-search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match)
+stop_after_first_match = False
+full_search = False
+
+search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search)
