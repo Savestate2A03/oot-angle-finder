@@ -3,6 +3,7 @@ import pickle
 import math
 import io
 import shutil
+import heapq
 
 # basic movement options
 
@@ -122,37 +123,48 @@ def shield_bottomright(angle):
     if not angle: return False
     return (angle - 0x6000) & 0xffff
 
+current_idx = 0
 def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search):
-    seen = []
+    seen_heap = []
+
+    def push(angle):
+        global current_idx
+        heapq.heappush(seen_heap, (angle['distance'], current_idx, angle))
+        current_idx = current_idx + 1
+
+    def pop():
+        if len(seen_heap) == 0:
+            return None
+        dist, id, top = heapq.heappop(seen_heap)
+        return top
 
     for starting_angle in starting_angles:
         graph[starting_angle]['distance']    = 0
         graph[starting_angle]['parent']      = None
         graph[starting_angle]['methodology'] = 'base angle'
         graph[starting_angle]['seen']        = 'True'
-        seen.append(graph[starting_angle])
+        push(graph[starting_angle])
 
     searching    = True
     instructions = []
     visited      = 0
+    lastDistance = -1
 
     while searching:
-        try:
-            # select seen node with smallest distance
-            current_node = min(seen, key=lambda node: node['distance'])
-        except ValueError:
-            print("No more seen nodes")
+        # select unvisited node with smallest distance
+        current_node = pop()
+        if current_node is None:
+            print("Ran out of nodes. Done!")
             break
+        visited += 1
+        distance = current_node['distance']
+
+        if distance != lastDistance:
+            lastDistance = distance
+            print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + 
+                    f" visited {visited}/{len(graph)}, seen {len(seen_heap)}, distance: {current_node['distance']} ({len(destination_angles)} left to find)")
 
         current_node['visited'] = True
-
-        visited += 1
-        if (visited % 512 == 0): # speed up search time by only printing update ocassionally
-            print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + 
-                    f" visited {visited}/{len(graph)}, seen {len(seen)}, distance: {current_node['distance']} ({len(destination_angles)} left to find)")
-
-        # once we've visited a seen node, don't need to visit it anymore
-        seen.remove(current_node)
 
         # look at each neighbor a node has, the neighbors are read from the current graph
         for neighbor in current_node['neighbors']:
@@ -175,7 +187,7 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
                     graph[neighbor['value']]['parent']       = current_node
                     graph[neighbor['value']]['methodology']  = neighbor['description']
                     graph[neighbor['value']]['seen']         = True
-                    seen.append(graph[neighbor['value']]) # add to seen nodes for later visiting
+                    push(graph[neighbor['value']]) # add to seen nodes for later visiting
                 except:
                     # don't know when this would happen, maybe i added it when doing debugging ...
                     # i'll leave it in though 
@@ -191,7 +203,7 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
                 if neighbor['value'] in destination_angles:
                     # traverse parents until you reach a root node
                     traverse_node = graph[neighbor['value']]
-                    print(f"found ! distance: {traverse_node['distance']}")
+                    print(f"found {neighbor['value']}! distance: {traverse_node['distance']} (visited {visited}, {len(destination_angles)} left to find)")
                     instructions.append(f"--------------")
                     while traverse_node:
                         instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
@@ -210,7 +222,7 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
 
     if not full_search:
         # print out results to user
-        print("finished searching for all destinations !")
+        print("finished searching for all destinations! visited " + str(visited) + " nodes")
         for instruction in instructions[::-1]:
             # print out instructions array in reverse order
             print(instruction)
@@ -248,7 +260,7 @@ with open('camera_favored.txt', 'r') as f:
         # process each camera angle as a hex number
         camera_angles.append(int(line.strip(), 16)) 
 
-generate_graph = False
+generate_graph = True
 
 # generate graph
 graph = []
@@ -279,13 +291,13 @@ else:
                 'description': f"ess left x{ess_amt}",
                 'value': ess(angle, True, ess_amt),
                 'type': '',
-                'adjustment': True
+                'adjustment': False
             })
             node['neighbors'].append({
                 'description': f"ess right x{ess_amt}",
                 'value': ess(angle, False, ess_amt),
                 'type': '',
-                'adjustment': True
+                'adjustment': False
             })
         node['neighbors'].append({
             'description': "turn left",
@@ -392,7 +404,7 @@ destination_angles = [
     0x1111, 0xacab, 0x9876
 ]
 
-max_ess = 8
+max_ess = 28
 types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
