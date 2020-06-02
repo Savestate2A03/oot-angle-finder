@@ -9,11 +9,11 @@ modify `types` with the allowed movement options
 modify `max_ess` to what you'd like to do max per section of a setup
 
 
-There is an html version available in [js/oot-angle-finder.html]().
+There is an html version available in [js/oot-angle-finder.html](js/oot-angle-finder.html).
 
 To build it:
 * Make sure you have typescript installed: `npm i -g typescript`
 * `tsc`
 * `cd js && python3 build_all_in_one.py`
 
-To develop, you can use [js/use_ts.html]() and `tsc --watch`
+To develop, you can use [js/use_ts.html](js/use_ts.html) and `tsc --watch`
