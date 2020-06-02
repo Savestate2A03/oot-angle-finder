@@ -223,9 +223,13 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
     if not full_search:
         # print out results to user
         print("finished searching for all destinations! visited " + str(visited) + " nodes")
-        for instruction in instructions[::-1]:
-            # print out instructions array in reverse order
-            print(instruction)
+        instructions.reverse()
+        with io.StringIO() as sio:
+            for instruction in instructions:
+                # print out instructions array in reverse order
+                print(instruction)
+                sio.write(instruction)
+            return sio.getvalue()
     else:
         # write full search to a file
         with io.StringIO() as sio:
