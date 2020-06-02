@@ -243,7 +243,8 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
                 while traverse_node:
                     instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
                     traverse_node = traverse_node['parent']
-                for instruction in instructions[::-1]:
+                instructions.reverse()
+                for instruction in instructions:
                     # write instructions in reverse order
                     sio.write(f"    {instruction}\n")
             # write string buffer to file
@@ -260,7 +261,7 @@ with open('camera_favored.txt', 'r') as f:
         # process each camera angle as a hex number
         camera_angles.append(int(line.strip(), 16)) 
 
-generate_graph = True
+generate_graph = False
 
 # generate graph
 graph = []
@@ -363,25 +364,25 @@ else:
             'description': 'top right shield turn',
             'value': shield_topright(angle),
             'type': 'shield_corner',
-            'adjustment': False
+            'adjustment': True
         })
         node['neighbors'].append({
             'description': 'top left shield turn',
             'value': shield_topleft(angle),
             'type': 'shield_corner',
-            'adjustment': False
+            'adjustment': True
         })
         node['neighbors'].append({
             'description': 'bottom right shield turn',
             'value': shield_bottomright(angle),
             'type': 'shield_corner',
-            'adjustment': False
+            'adjustment': True
         })
         node['neighbors'].append({
             'description': 'bottom left shield turn',
             'value': shield_bottomleft(angle),
             'type': 'shield_corner',
-            'adjustment': False
+            'adjustment': True
         })
         for neighbor in node['neighbors']:
             # alert about potential target + ess up in some cases
@@ -401,10 +402,10 @@ starting_angles    = [
 ]
 
 destination_angles = [
-    0x1111, 0xacab, 0x9876
+    0x0419, 0xacab
 ]
 
-max_ess = 8
+max_ess = 10
 types   = ['sword', 'no_carry']
 # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
