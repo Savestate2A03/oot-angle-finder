@@ -116,13 +116,13 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
     instructions = []
 
     while searching:
-        # select unvisited node with smallest distance
-        current_node = min(seen, key=lambda node: node['distance'])
+        # select next unvisited node
+        current_node = seen.pop(0)
 
-        print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + f" distance: {current_node['distance']} ({len(destination_angles)} left to find)")
+        if print_debug_logs:
+            print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + f" distance: {current_node['distance']} ({len(destination_angles)} left to find)")
 
         current_node['visited'] = True
-        seen.remove(current_node)
 
         for neighbor in current_node['neighbors']:
             if graph[neighbor['value']]['seen']: continue
@@ -180,6 +180,7 @@ with open('camera_favored.txt', 'r') as f:
         camera_angles.append(int(line.strip(), 16)) 
 
 generate_graph = False
+print_debug_logs = False
 
 # generate graph
 graph = []
@@ -278,7 +279,9 @@ else:
             'type': 'shield_corner'
         })
         graph.append(node)
-        print(hex(angle))
+
+        if print_debug_logs:
+            print(hex(angle))
     with open('graph.pickle', 'wb') as f:
         pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
