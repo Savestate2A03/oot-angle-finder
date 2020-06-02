@@ -283,11 +283,11 @@ else:
         pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
 
 starting_angles    = [
-    0x2222
+    0x1234
 ]
 
 destination_angles = [
-    0xdad0
+    0xe001, 0xacab
 ]
 
 stop_after_first_match = False
