@@ -228,7 +228,7 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
             for instruction in instructions:
                 # print out instructions array in reverse order
                 print(instruction)
-                sio.write(instruction)
+                sio.write(instruction + "\n")
             return sio.getvalue()
     else:
         # write full search to a file
