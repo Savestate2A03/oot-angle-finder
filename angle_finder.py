@@ -4,6 +4,10 @@ import math
 import io
 import shutil
 import heapq
+import csv
+
+def hexhw(value):
+    return "{0:#0{1}x}".format(value, 6)
 
 # basic movement options
 
@@ -42,9 +46,9 @@ def ess_up_adjust(angle):
         return False
 
     global camera_angles
-    angle_hex = "{0:#0{1}x}".format(angle, 6) # 0xabcd
+    angle_hex = hexhw(angle) # 0xabcd
     for index in range(len(camera_angles)):
-        camera_angle_hex = "{0:#0{1}x}".format(camera_angles[index], 6) # 0xabcd
+        camera_angle_hex = hexhw(camera_angles[index]) # 0xabcd
         if camera_angle_hex[:5] >= angle_hex[:5]:
             # more camera bullshit go to hell
             if angle >= 0xf55f and angle < 0xf8bf and angle_hex[5:] == "f":
@@ -124,7 +128,7 @@ def shield_bottomright(angle):
     return (angle - 0x6000) & 0xffff
 
 current_idx = 0
-def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search):
+def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search, csv_out):
     seen_heap = []
 
     def push(angle):
@@ -145,10 +149,11 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
         graph[starting_angle]['seen']        = 'True'
         push(graph[starting_angle])
 
-    searching    = True
-    instructions = []
-    visited      = 0
-    lastDistance = -1
+    searching     = True
+    instructions  = {}
+    solved_angles = {}
+    visited       = 0
+    lastDistance  = -1
 
     while searching:
         # select unvisited node with smallest distance
@@ -161,37 +166,34 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
 
         if distance != lastDistance:
             lastDistance = distance
-            print("visiting {0:#0{1}x}...".format(graph.index(current_node), 6) + 
+            print(f"visiting {hexhw(graph.index(current_node))}..." + 
                     f" visited {visited}/{len(graph)}, seen {len(seen_heap)}, distance: {current_node['distance']} ({len(destination_angles)} left to find)")
 
         current_node['visited'] = True
 
         # look at each neighbor a node has, the neighbors are read from the current graph
         for neighbor in current_node['neighbors']:
-            ess_amount = -1 # setting up weights for ess, -1 means this isn't an ess command
             if graph[neighbor['value']]['seen']: continue # don't bother if we've seen the node
             if 'ess left' in neighbor['description'] or 'ess right' in neighbor['description']:
-                # if we're essing left or right, grab the amount of turns for the weight and max check
+                # if we're essing left or right, grab the amount of turns for max check
                 start = neighbor['description'].index('x') + 1
-                ess_amount = int(neighbor['description'][start:])
-                if ess_amount > max_ess:
+                if int(neighbor['description'][start:]) > max_ess:
                     continue
             # only check neighbors who are configured to be allowed
             if neighbor['type'] in types or neighbor['type'] == '':
-                try:
-                    if ess_amount != -1:
-                        # every 8 ess turns is considered a single unit of weight / distance
-                        graph[neighbor['value']]['distance'] = current_node['distance'] + math.ceil(ess_amount/8)
-                    else:
-                        graph[neighbor['value']]['distance'] = current_node['distance'] + 1 
-                    graph[neighbor['value']]['parent']       = current_node
-                    graph[neighbor['value']]['methodology']  = neighbor['description']
-                    graph[neighbor['value']]['seen']         = True
-                    push(graph[neighbor['value']]) # add to seen nodes for later visiting
-                except:
-                    # don't know when this would happen, maybe i added it when doing debugging ...
-                    # i'll leave it in though 
-                    pass
+                if 'ess up' in neighbor['description']:
+                    graph[neighbor['value']]['distance'] = current_node['distance'] + 0.5
+                elif 'turn' in neighbor['description']:
+                    graph[neighbor['value']]['distance'] = current_node['distance'] + 0.5
+                elif 'spin' in neighbor['description']:
+                    graph[neighbor['value']]['distance'] = current_node['distance'] + 1.5
+                else:
+                    graph[neighbor['value']]['distance'] = current_node['distance'] + 1
+
+                graph[neighbor['value']]['parent']       = current_node
+                graph[neighbor['value']]['methodology']  = neighbor['description']
+                graph[neighbor['value']]['seen']         = True
+                push(graph[neighbor['value']]) # add to seen nodes for later visiting
 
                 # no need to check for specific destination angles if doing a full search
                 if full_search: 
@@ -203,32 +205,48 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
                 if neighbor['value'] in destination_angles:
                     # traverse parents until you reach a root node
                     traverse_node = graph[neighbor['value']]
-                    print(f"found {neighbor['value']}! distance: {traverse_node['distance']} (visited {visited}, {len(destination_angles)} left to find)")
-                    instructions.append(f"--------------")
+                    print(f"found {hexhw(neighbor['value'])}! distance: {traverse_node['distance']} (visited {visited}, {len(destination_angles)} left to find)")
+                    instructions[hexhw(neighbor['value'])] = []
                     while traverse_node:
-                        instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
+                        instructions[hexhw(neighbor['value'])].append(f"{traverse_node['methodology']} to " + hexhw(graph.index(traverse_node)))
                         traverse_node = traverse_node['parent']
+                    instructions[hexhw(neighbor['value'])].reverse()
                     destination_angles.remove(neighbor['value'])
                     if stop_after_first_match:
                         searching = False
-                        instructions.append(f"--------------")
                         break
 
                 # no more angles, finish up
                 if len(destination_angles) == 0:
                     searching = False
-                    instructions.append(f"--------------")
                     break
 
     if not full_search:
         # print out results to user
         print("finished searching for all destinations! visited " + str(visited) + " nodes")
-        instructions.reverse()
+        dest_vals = sorted(instructions)
+
+        if csv_out:
+            print("writing csv ...")
+            with open('searched.csv', 'w', newline='') as csvfile:
+                fieldnames = ['angle', 'distance', 'instructions']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for dest_val in dest_vals:
+                    writer.writerow({
+                        'angle': dest_val,
+                        'distance': graph[int(dest_val, 16)]['distance'],
+                        'instructions': ", ".join(instructions[dest_val])
+                    })
+
         with io.StringIO() as sio:
-            for instruction in instructions:
-                # print out instructions array in reverse order
-                print(instruction)
-                sio.write(instruction + "\n")
+            print("--------------")
+            for dest_val in dest_vals:
+                for instruction in instructions[dest_val]:
+                    print(instruction)
+                    sio.write(instruction + "\n")
+                print("--------------")
+                sio.write("--------------\n")
             return sio.getvalue()
     else:
         # write full search to a file
@@ -236,16 +254,16 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
             sio.write(f"full angle dump\n")
             sio.write(f"            types: {types}\n")
             sio.write(f"          max ess: {max_ess}\n")
-            sio.write(f"  starting angles: {', '.join('{0:#0{1}x}'.format(angle, 6) for angle in starting_angles)}\n")
+            sio.write(f"  starting angles: {', '.join(hexhw(angle) for angle in starting_angles)}\n")
             # dumping all angles ...
             for angle in range(0x10000):
                 if (angle % 512 == 0): # only show ocassional progress
-                    print("writing {0:#0{1}x} ... ".format(angle, 6))
-                sio.write("{0:#0{1}x}".format(angle, 6) + ":\n")
+                    print(f"writing {hexhw(angle)} ... ")
+                sio.write(f"{hexhw(angle)}:\n")
                 instructions = [] # clear out instructions array
                 traverse_node = graph[angle]
                 while traverse_node:
-                    instructions.append(f"{traverse_node['methodology']} to " + "{0:#0{1}x}".format(graph.index(traverse_node), 6))
+                    instructions.append(f"{traverse_node['methodology']} to " + hexhw(graph.index(traverse_node)))
                     traverse_node = traverse_node['parent']
                 instructions.reverse()
                 for instruction in instructions:
@@ -408,14 +426,15 @@ if __name__ == '__main__':
     ]
 
     destination_angles = [
-        0x2332, 0x1234, 0xacab
+        0x2342, 0xfff2, 0x7425, 0xacab, 0x1213, 0x1111
     ]
 
-    max_ess = 10
+    max_ess = 8
     types   = ['sword', 'no_carry']
     # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
     stop_after_first_match = False
     full_search = False
+    csv_out = True
 
-    search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search)
+    search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search, csv_out)
