@@ -288,7 +288,7 @@ if __name__ == '__main__':
             # process each camera angle as a hex number
             camera_angles.append(int(line.strip(), 16)) 
 
-    generate_graph = True
+    generate_graph = False
 
     # generate graph
     graph = []
