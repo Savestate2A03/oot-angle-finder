@@ -106,6 +106,9 @@ def biggoron_spin(angle):
 def biggoron_spin_shield(angle):
     return (angle + 0x04f5) & 0xffff
 
+def hammer_shield_cancel(angle):
+    return (angle - 0x0f90) & 0xffff
+
 # perfect corner shield turns (n64 only) 
 def shield_topright(angle):
     angle = ess_up_adjust(angle)
@@ -285,7 +288,7 @@ if __name__ == '__main__':
             # process each camera angle as a hex number
             camera_angles.append(int(line.strip(), 16)) 
 
-    generate_graph = False
+    generate_graph = True
 
     # generate graph
     graph = []
@@ -379,6 +382,12 @@ if __name__ == '__main__':
                 'adjustment': False
             })
             node['neighbors'].append({
+                'description': "hammer side swing shield cancel",
+                'value': hammer_shield_cancel(angle),
+                'type': 'hammer',
+                'adjustment': False
+            })
+            node['neighbors'].append({
                 'description': "backflip roll",
                 'value': backflip_sideroll(angle),
                 'type': 'no_carry',
@@ -422,15 +431,16 @@ if __name__ == '__main__':
             print("Failed to write graph") # can happen on large dumps
 
     starting_angles    = [
-        0x0000, 0x4000, 0x8000, 0xc001
+        0xc000, 0xc001, 0x4000, 0x0001, 0x8001, 0x0000, 0x4000, 0x8000, 0x8001
     ]
 
     destination_angles = [
-        0x2342, 0xfff2, 0x7425, 0xacab, 0x1213, 0x1111
+        0x9108, 0xacab, 0x1702, 0x0800
     ]
 
-    max_ess = 8
-    types   = ['sword', 'no_carry']
+    max_ess = 28
+
+    types = ['hammer', 'no_carry']
     # types = ['sword', 'biggoron', 'no_carry', 'shield_corner']
 
     stop_after_first_match = False
