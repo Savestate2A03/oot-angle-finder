@@ -125,9 +125,9 @@ def navigate_best(graph, to):
 def print_path(path):
     for motion, angle in path:
         if motion == None:
-            print(f"start at {movements.hexhw(angle)}")
+            print(f"start at {hex(angle)}")
         else:
-            print(f"{motion} to {movements.hexhw(angle)}")
+            print(f"{motion} to {hex(angle)}")
 
 
 COST_TABLE[None] = BASIC_COSTS.copy()

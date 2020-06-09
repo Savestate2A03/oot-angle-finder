@@ -1,10 +1,6 @@
 import gzip
 
 
-def hexhw(value):
-    return "{0:#0{1}x}".format(value, 6)
-
-
 # generally just ess up, but also considered adjusting
 # the camera when turning left / right / 180
 def ess_up_adjust_noncached(angle):
@@ -12,44 +8,43 @@ def ess_up_adjust_noncached(angle):
     # camera bullshit as determined by manual testing
 
     # don't bother, these just snap to 0x4000 and 0x8000
-    if (angle >= 0x385F and angle < 0x4000) or (angle >= 0x794F and angle < 0x8000):
+    if (0x385F <= angle < 0x4000) or (0x794F <= angle < 0x8000):
         return False
 
-    # these gravitate towards 0xff91
-    if angle >= 0xFF5F and angle < 0xFF8F:
-        return 0xFF91
-
-    # these gravitate towards 0xbe81
-    if angle >= 0xBE4F and angle < 0xBE7F:
-        return 0xBE81
-
-    # these gravitate towards 0xbec1
-    if angle >= 0xBE7F and angle < 0xBEBF:
-        return 0xBEC1
-
     # these snap to 0xc001
-    if angle >= 0xBEBF and angle < 0xC001:
+    if 0xBEBF <= angle < 0xC001:
         return False
 
     # these snap to 0x0000
-    if angle >= 0xFF8F:
+    if 0xFF8F <= angle:
         return False
 
+    # these gravitate towards 0xbe81
+    if 0xBE4F <= angle < 0xBE7F:
+        return 0xBE81
+
+    # these gravitate towards 0xbec1
+    if 0xBE7F <= angle < 0xBEBF:
+        return 0xBEC1
+
+    # these gravitate towards 0xff91
+    if 0xFF5F <= angle < 0xFF8F:
+        return 0xFF91
+
     global camera_angles
-    angle_hex = hexhw(angle)  # 0xabcd
     for index in range(len(camera_angles)):
-        camera_angle_hex = hexhw(camera_angles[index])  # 0xabcd
-        if camera_angle_hex[:5] >= angle_hex[:5]:
+        camera_angle = camera_angles[index]
+        if (camera_angle & 0xFFF0) >= (angle & 0xFFF0):
             # more camera bullshit go to hell
-            if angle >= 0xF55F and angle < 0xF8BF and angle_hex[5:] == "f":
+            if (0xF55F <= angle < 0xF8BF) and (angle & 0xF == 0xF):
                 index += 1  # if we're in the above range and last char is f
-            if angle >= 0xF8BF:
+            if 0xF8BF <= angle:
                 index += 1  # however this happens automatically when above 0xf8bf
-            if angle >= 0xB43F and angle < 0xB85F and angle_hex[5:] == "f":
+            if (0xB43F <= angle < 0xB85F) and (angle & 0xF == 0xF):
                 index += 1  # samething but for another value range
-            if angle >= 0xB85F and angle < 0xC001:
+            if 0xB85F <= angle < 0xC001:
                 index += 1  # automatic again
-            if angle_hex[5:] == "f":
+            if angle & 0xF == 0xF:
                 # snapping up happens on the f threshold apparently
                 return camera_angles[index + 1] & 0xFFFF
             return camera_angles[index] & 0xFFFF
@@ -72,7 +67,7 @@ except:
             camera_angles.append(int(line.strip(), 16))
 
     for angle in range(0xFFFF + 1):
-        print(f"Caching camera movements ({hexhw(angle)})...", end="\r")
+        print(f"Caching camera movements ({hex(angle)})...", end="\r")
         CAMERA_SNAPS.append(ess_up_adjust_noncached(angle))
     print("\nDone.")
 
