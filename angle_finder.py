@@ -7,129 +7,9 @@ import heapq
 import csv
 import gzip
 
-def hexhw(value):
-    return "{0:#0{1}x}".format(value, 6)
+import movement
+from movement import hexhw
 
-# basic movement options
-
-def ess(angle, left, amt):
-    return (((angle + 0x0708*amt) if left else (angle - 0x0708*amt)) & 0xffff)
-
-# generally just ess up, but also considered adjusting
-# the camera when turning left / right / 180
-def ess_up_adjust(angle):
-
-    # camera bullshit as determined by manual testing
-
-    # don't bother, these just snap to 0x4000 and 0x8000
-    if ((angle >= 0x385f and angle < 0x4000) or
-       (angle >= 0x794f and angle < 0x8000)):
-       return False
-
-    # these gravitate towards 0xff91
-    if (angle >= 0xff5f and angle < 0xff8f):
-        return 0xff91
-
-    # these gravitate towards 0xbe81
-    if (angle >= 0xbe4f and angle < 0xbe7f):
-        return 0xbe81
-
-    # these gravitate towards 0xbec1
-    if (angle >= 0xbe7f and angle < 0xbebf):
-        return 0xbec1
-
-    # these snap to 0xc001
-    if (angle >= 0xbebf and angle < 0xc001):
-        return False
-
-    # these snap to 0x0000
-    if (angle >= 0xff8f): 
-        return False
-
-    global camera_angles
-    angle_hex = hexhw(angle) # 0xabcd
-    for index in range(len(camera_angles)):
-        camera_angle_hex = hexhw(camera_angles[index]) # 0xabcd
-        if camera_angle_hex[:5] >= angle_hex[:5]:
-            # more camera bullshit go to hell
-            if angle >= 0xf55f and angle < 0xf8bf and angle_hex[5:] == "f":
-                index += 1 # if we're in the above range and last char is f
-            if angle >= 0xf8bf:
-                index += 1 # however this happens automatically when above 0xf8bf
-            if angle >= 0xb43f and angle < 0xb85f and angle_hex[5:] == "f":
-                index += 1 # samething but for another value range
-            if angle >= 0xb85f and angle < 0xc001:
-                index += 1 # automatic again
-            if angle_hex[5:] == "f":
-                # snapping up happens on the f threshold apparently
-                return camera_angles[index+1] & 0xffff 
-            return camera_angles[index] & 0xffff
-        index += 1
-
-def turn(angle, left):
-    angle = ess_up_adjust(angle) # camera auto adjusts similar to ess up
-    if not angle: return False
-    return ((angle + 0x4000 if left else angle - 0x4000) & 0xffff)
-
-def turn_180(angle):
-    angle = ess_up_adjust(angle) # camera auto adjusts similar to ess up
-    if not angle: return False
-    return (angle + 0x8000) & 0xffff
-
-# no_carry movement options. these can be 
-# executed when Link isn't holding anything
-
-def sidehop_sideroll(angle, left):
-    return ((angle + 0x1cd8 if left else angle - 0x1cd8) & 0xffff)
-
-def ess_down_sideroll(angle):
-    left = True
-    camera_angle = ess_up_adjust(angle)
-    # link always rolls right when the camera is auto snapping
-    if not camera_angle:
-        left = False
-    elif camera_angle >= angle: # left / right depends on camera
-        left = False
-    return ((angle + 0x3a98 if left else angle - 0x3a98) & 0xffff)
-
-# forces a right roll even if ess down roll goes left
-def backflip_sideroll(angle):
-    return (angle - 0x3a98) & 0xffff
-
-# sword-related movement
-
-def kokiri_spin(angle):
-    return (angle - 0x0ccd) & 0xffff 
-
-def biggoron_spin(angle):
-    return (angle + 0x1219) & 0xffff
-
-def biggoron_spin_shield(angle):
-    return (angle + 0x04f5) & 0xffff
-
-def hammer_shield_cancel(angle):
-    return (angle - 0x0f90) & 0xffff
-
-# perfect corner shield turns (n64 only) 
-def shield_topright(angle):
-    angle = ess_up_adjust(angle)
-    if not angle: return False
-    return (angle - 0x2000) & 0xffff
-
-def shield_topleft(angle):
-    angle = ess_up_adjust(angle)
-    if not angle: return False
-    return (angle + 0x2000) & 0xffff
-
-def shield_bottomleft(angle):
-    angle = ess_up_adjust(angle)
-    if not angle: return False
-    return (angle + 0x6000) & 0xffff
-
-def shield_bottomright(angle):
-    angle = ess_up_adjust(angle)
-    if not angle: return False
-    return (angle - 0x6000) & 0xffff
 
 current_idx = 0
 def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_after_first_match, full_search, csv_out):
@@ -281,14 +161,6 @@ def search_for(graph, types, max_ess, starting_angles, destination_angles, stop_
 # ----------------------------------------------------------------------
 
 if __name__ == '__main__':
-    # don't run on server
-    with open('camera_favored.txt', 'r') as f:
-        lines = f.readlines()
-        camera_angles = []
-        for line in lines:
-            # process each camera angle as a hex number
-            camera_angles.append(int(line.strip(), 16)) 
-
     generate_graph = False
 
     # generate graph
@@ -309,7 +181,7 @@ if __name__ == '__main__':
             }
             node['neighbors'].append({
                 'description': "ess up",
-                'value': ess_up_adjust(angle),
+                'value': movement.ess_up_adjust(angle),
                 'type': '',
                 'adjustment': True
             })
@@ -318,103 +190,103 @@ if __name__ == '__main__':
             for ess_amt in range(29):
                 node['neighbors'].append({
                     'description': f"ess left x{ess_amt}",
-                    'value': ess(angle, True, ess_amt),
+                    'value': movement.ess(angle, True, ess_amt),
                     'type': '',
                     'adjustment': False
                 })
                 node['neighbors'].append({
                     'description': f"ess right x{ess_amt}",
-                    'value': ess(angle, False, ess_amt),
+                    'value': movement.ess(angle, False, ess_amt),
                     'type': '',
                     'adjustment': False
                 })
             node['neighbors'].append({
                 'description': "turn left",
-                'value': turn(angle, True),
+                'value': movement.turn(angle, True),
                 'type': '',
                 'adjustment': True
             })
             node['neighbors'].append({
                 'description': "turn right",
-                'value': turn(angle, False),
+                'value': movement.turn(angle, False),
                 'type': '',
                 'adjustment': True
             })
             node['neighbors'].append({
                 'description': "turn 180",
-                'value': turn_180(angle),
+                'value': movement.turn_180(angle),
                 'type': '',
                 'adjustment': True
             })
             node['neighbors'].append({
                 'description': "sidehop roll left",
-                'value': sidehop_sideroll(angle, True),
+                'value': movement.sidehop_sideroll(angle, True),
                 'type': 'no_carry',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "sidehop roll right",
-                'value': sidehop_sideroll(angle, False),
+                'value': movement.sidehop_sideroll(angle, False),
                 'type': 'no_carry',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "kokiri/master spin shield cancel",
-                'value': kokiri_spin(angle),
+                'value': movement.kokiri_spin(angle),
                 'type': 'sword',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "biggoron slash shield cancel",
-                'value': biggoron_spin(angle),
+                'value': movement.biggoron_spin(angle),
                 'type': 'biggoron',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "biggoron spin shield cancel",
-                'value': biggoron_spin_shield(angle),
+                'value': movement.biggoron_spin_shield(angle),
                 'type': 'biggoron',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "ess down sideroll",
-                'value': ess_down_sideroll(angle),
+                'value': movement.ess_down_sideroll(angle),
                 'type': 'no_carry',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "hammer side swing shield cancel",
-                'value': hammer_shield_cancel(angle),
+                'value': movement.hammer_shield_cancel(angle),
                 'type': 'hammer',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': "backflip roll",
-                'value': backflip_sideroll(angle),
+                'value': movement.backflip_sideroll(angle),
                 'type': 'no_carry',
                 'adjustment': False
             })
             node['neighbors'].append({
                 'description': 'top right shield turn',
-                'value': shield_topright(angle),
+                'value': movement.shield_topright(angle),
                 'type': 'shield_corner',
                 'adjustment': True
             })
             node['neighbors'].append({
                 'description': 'top left shield turn',
-                'value': shield_topleft(angle),
+                'value': movement.shield_topleft(angle),
                 'type': 'shield_corner',
                 'adjustment': True
             })
             node['neighbors'].append({
                 'description': 'bottom right shield turn',
-                'value': shield_bottomright(angle),
+                'value': movement.shield_bottomright(angle),
                 'type': 'shield_corner',
                 'adjustment': True
             })
             node['neighbors'].append({
                 'description': 'bottom left shield turn',
-                'value': shield_bottomleft(angle),
+                'value': movement.shield_bottomleft(angle),
                 'type': 'shield_corner',
                 'adjustment': True
             })
