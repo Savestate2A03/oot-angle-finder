@@ -1,23 +1,13 @@
-# don't run on server
-with open('camera_favored.txt', 'r') as f:
-    lines = f.readlines()
-    camera_angles = []
-    for line in lines:
-        # process each camera angle as a hex number
-        camera_angles.append(int(line.strip(), 16)) 
+import gzip
+
 
 
 def hexhw(value):
     return "{0:#0{1}x}".format(value, 6)
 
-# basic movement options
-
-def ess(angle, left, amt):
-    return (((angle + 0x0708*amt) if left else (angle - 0x0708*amt)) & 0xffff)
-
 # generally just ess up, but also considered adjusting
 # the camera when turning left / right / 180
-def ess_up_adjust(angle):
+def ess_up_adjust_noncached(angle):
 
     # camera bullshit as determined by manual testing
 
@@ -65,6 +55,39 @@ def ess_up_adjust(angle):
                 return camera_angles[index+1] & 0xffff 
             return camera_angles[index] & 0xffff
         index += 1
+
+CAMERA_SNAPS = []
+
+try:
+    with gzip.open("camera_snaps.txt.gz", "rt") as cam:
+        for line in cam:
+            if line.strip() == "False":
+                CAMERA_SNAPS.append(False)
+            else:
+                CAMERA_SNAPS.append(int(line))
+except:
+    camera_angles = []
+    with open('camera_favored.txt', 'r') as f:
+        for line in f:
+            camera_angles.append(int(line.strip(), 16))
+
+    for angle in range(0xFFFF + 1):
+        print(f"Caching camera movements ({hexhw(angle)})...", end="\r")
+        CAMERA_SNAPS.append(ess_up_adjust_noncached(angle))
+    print("\nDone.")
+
+    with gzip.open("camera_snaps.txt.gz", "wt") as cam:
+        for angle in CAMERA_SNAPS:
+            print(angle, file=cam)
+
+def ess_up_adjust(angle):
+    return CAMERA_SNAPS[angle]
+
+
+# basic movement options
+
+def ess(angle, left, amt):
+    return (((angle + 0x0708*amt) if left else (angle - 0x0708*amt)) & 0xffff)
 
 def turn(angle, left):
     angle = ess_up_adjust(angle) # camera auto adjusts similar to ess up
