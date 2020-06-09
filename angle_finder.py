@@ -5,6 +5,7 @@ import io
 import shutil
 import heapq
 import csv
+import gzip
 
 def hexhw(value):
     return "{0:#0{1}x}".format(value, 6)
@@ -293,7 +294,7 @@ if __name__ == '__main__':
     # generate graph
     graph = []
     if not generate_graph:
-        with open('graph.pickle', 'rb') as f:
+        with gzip.open('graph.pickle.gz', 'rb') as f:
             graph = pickle.load(f)
     else:
         print("Generating graph up to 0xFFFF ...")
@@ -425,7 +426,7 @@ if __name__ == '__main__':
             if (angle % 512 == 0): # only print results ocassionally 
                 print(hex(angle))
         try:
-            with open('graph.pickle', 'wb') as f:
+            with gzip.open('graph.pickle.gz', 'wb') as f:
                 pickle.dump(graph, f, pickle.HIGHEST_PROTOCOL)
         except:
             print("Failed to write graph") # can happen on large dumps
