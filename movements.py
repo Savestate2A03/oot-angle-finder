@@ -1,6 +1,5 @@
 import gzip
 
-
 # generally just ess up, but also considered adjusting
 # the camera when turning left / right / 180
 def ess_up_adjust_noncached(angle):
@@ -82,7 +81,6 @@ def ess_up_adjust(angle):
 
 # basic movement options
 
-
 def ess_left(angle):
     return angle + 0x0708
 
@@ -99,14 +97,14 @@ def turn_left(angle):
 
 
 def turn_right(angle):
-    angle = ess_up_adjust(angle)  # camera auto adjusts similar to ess up
+    angle = ess_up_adjust(angle)
     if not angle:
         return None
     return angle - 0x4000
 
 
 def turn_180(angle):
-    angle = ess_up_adjust(angle)  # camera auto adjusts similar to ess up
+    angle = ess_up_adjust(angle)
     if not angle:
         return None
     return angle + 0x8000
@@ -114,7 +112,6 @@ def turn_180(angle):
 
 # no_carry movement options. these can be
 # executed when Link isn't holding anything
-
 
 def sidehop_sideroll_left(angle):
     return angle + 0x1CD8
@@ -134,24 +131,22 @@ def ess_down_sideroll(angle):
         left = False
     return angle + 0x3A98 if left else angle - 0x3A98
 
-
-# forces a right roll even if ess down roll goes left
 def backflip_sideroll(angle):
+    # forces a right roll even if ess down roll goes left
     return angle - 0x3A98
 
 
 # sword-related movement
 
-
-def kokiri_spin(angle):
+def sword_spin_shield_cancel(angle):
     return angle - 0x0CCD
 
 
-def biggoron_spin(angle):
+def biggoron_slash_shield_cancel(angle):
     return angle + 0x1219
 
 
-def biggoron_spin_shield(angle):
+def biggoron_spin_shield_cancel(angle):
     return angle + 0x04F5
 
 
@@ -160,6 +155,7 @@ def hammer_shield_cancel(angle):
 
 
 # perfect corner shield turns (n64 only)
+
 def shield_topright(angle):
     angle = ess_up_adjust(angle)
     if not angle:
@@ -199,9 +195,9 @@ table = {
     "sidehop sideroll right": sidehop_sideroll_right,
     "ess down sideroll": ess_down_sideroll,
     "backflip sideroll": backflip_sideroll,
-    "kokiri spin": kokiri_spin,
-    "biggoron spin": biggoron_spin,
-    "biggoron spin shield": biggoron_spin_shield,
+    "sword spin shield cancel": sword_spin_shield_cancel,
+    "biggoron slash shield cancel": biggoron_slash_shield_cancel,
+    "biggoron spin shield cancel": biggoron_spin_shield_cancel,
     "hammer shield cancel": hammer_shield_cancel,
     "shield top-right": shield_topright,
     "shield top-left": shield_topleft,
