@@ -6,6 +6,8 @@ import motions
 
 # QUICK USAGE:
 #
+# MOVEMENT_OPTIONS --- Motions grouped by the game state required to perform them.
+#
 # BASIC_COSTS --- How to rank each motion.
 #      "ess up": 0.5,
 #      "turn left": 1.0,
@@ -26,7 +28,6 @@ import motions
 
 COST_FLEX = 3.0
 COST_TABLE = {}
-FILTERED_MOVEMENTS = []
 
 MOVEMENT_OPTIONS = {
     "basic": [
@@ -184,7 +185,6 @@ def edges_out(graph, angle, last_motion, last_cost):
         return
 
     for (motion, cost_increase) in COST_TABLE[last_motion].items():
-          
         new_angle = motions.table[motion](angle)
 
         if new_angle is None:
@@ -295,9 +295,6 @@ def navigate_all(graph, angle, path=None, seen=None, flex=COST_FLEX):
         edges = sorted(node.edges_in.values(), key=lambda e: e.cost)
 
         for edge in edges:
-            if edge.motion not in FILTERED_MOVEMENTS:
-                continue
-
             new_flex = (node.best - edge.cost) + flex
 
             if new_flex < 0:
@@ -342,7 +339,7 @@ def print_path(angle, path):
     })
 
     # get the padding amount based on the length for the largest motion string
-    text_length = len(max([output['motion'] for output in motions_output], key=len))
+    text_length = len(max([output["motion"] for output in motions_output], key=len))
     for motion in motions_output:
         # print out each motion
         print(f"{motion['motion']:<{text_length}} to {motion['angle']}")
@@ -369,35 +366,38 @@ def collect_paths(graph, angle, sample_size=20, number=10):
     return paths[:number]
 
 
-def set_movements(movements):
-    global FILTERED_MOVEMENTS
-    FILTERED_MOVEMENTS = []
-    for movement in movements:
-        FILTERED_MOVEMENTS.extend(MOVEMENT_OPTIONS[movement])
+def initialize_cost_table():
+    COST_TABLE[None] = BASIC_COSTS.copy()
+
+    for motion, cost in BASIC_COSTS.items():
+        COST_TABLE[motion] = BASIC_COSTS.copy()
+    for (first, then), cost in COST_CHAINS.items():
+        COST_TABLE[first][then] = cost
+
+    all_motions = set(BASIC_COSTS.keys())
+    allowed_motions = {m for group in ALLOWED_GROUPS for m in MOVEMENT_OPTIONS[group]}
+    disallowed_motions = all_motions - allowed_motions
+
+    for motion in disallowed_motions:
+        del COST_TABLE[motion]
+    for first in COST_TABLE:
+        for motion in disallowed_motions:
+            del COST_TABLE[first][motion]
 
 
-COST_TABLE[None] = BASIC_COSTS.copy()
-for motion, cost in BASIC_COSTS.items():
-    COST_TABLE[motion] = BASIC_COSTS.copy()
-for (first, then), cost in COST_CHAINS.items():
-    COST_TABLE[first][then] = cost
+ALLOWED_GROUPS = ["basic", "no carry", "target enabled", "hammer"]
+
+initialize_cost_table()
 
 
 if __name__ == "__main__":
     # Create a graph starting at the given angles.
-    graph = explore([0xc000, 0x8000, 0x4000, 0x0000])
+    graph = explore([0xC000, 0x8000, 0x4000, 0x0000])
     print()
-
-    set_movements(["basic", "no carry", "target enabled", "hammer"])
-
-    # set_movements([
-    #    "basic", "target enabled", "no carry",
-    #    "sword", "biggoron", "hammer", "shield corners" 
-    # ])
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
-    for angle in [0x1702, 0x9999, 0xacab, 0x1234]:
+    for angle in [0x1702, 0x9999, 0xACAB, 0x1234]:
         paths = collect_paths(graph, angle, sample_size=50, number=5)
 
         for cost, angle, path in paths:
