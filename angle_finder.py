@@ -247,6 +247,7 @@ def cost_of_path(path):
     last = None
     for next in path:
         cost += COST_TABLE[last][next]
+        last = next
     return cost
 
 
