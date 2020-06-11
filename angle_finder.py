@@ -1,5 +1,6 @@
 import collections
 import heapq
+import sys
 from decimal import *
 
 import motions
@@ -27,6 +28,7 @@ import motions
 # Go to the bottom of this file to select angles and run the search.
 
 getcontext().prec = 4 # Decimal to 4 places
+sys.setrecursionlimit(5000) # basic searches can get a lil' wild
 
 COST_FLEX = Decimal(3.0)
 COST_TABLE = {}
