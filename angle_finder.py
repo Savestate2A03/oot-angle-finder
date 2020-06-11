@@ -273,11 +273,11 @@ def navigate_all(graph, angle, path=None, seen=None, flex=COST_FLEX):
 
 
 def print_path(angle, path):
-    print(f"start at {hex(angle)}")
+    print("start at {:#06x}".format(angle))
 
     for motion in path:
         angle = motions.table[motion](angle) & 0xFFFF
-        print(f"{motion} to {hex(angle)}")
+        print("{:28} to {:#06x}".format(motion, angle))
 
 
 def collect_paths(graph, angle, sample_size=20, number=10):
