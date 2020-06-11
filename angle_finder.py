@@ -40,7 +40,7 @@ empty_node = lambda: Node(edges_in={}, best=None)
 
 def maybe_add_edge(graph, edge, to_angle):
     def min_none(x, y):
-        return min(x, y) if x is not None else y
+        return x if (x is not None and x < y) else y
 
     to_node = graph[to_angle]
     edges_in = to_node.edges_in
@@ -66,6 +66,9 @@ def maybe_add_edge(graph, edge, to_angle):
 
 
 def edges_out(graph, angle, last_movement, last_cost):
+    if graph[angle].best < last_cost:
+        return
+
     for (movement, cost_increase) in COST_TABLE[last_movement].items():
         new_angle = movements.table[movement](angle)
 
@@ -82,6 +85,7 @@ def edges_out(graph, angle, last_movement, last_cost):
 def explore(starting_angles):
     graph = [empty_node() for _ in range(0xFFFF + 1)]
     queue = []
+    seen = 0
 
     for angle in starting_angles:
         edges_in = {None: Edge(from_angle=None, movement=None, cost=0)}
@@ -89,6 +93,7 @@ def explore(starting_angles):
 
         graph[angle] = Node(edges_in, best)
         heapq.heappush(queue, (0.0, angle, None))
+        seen += 1
 
     should_print = 0
     while len(queue) > 0:
@@ -97,9 +102,15 @@ def explore(starting_angles):
             should_print = 100
         should_print -= 1
 
+        if seen == (0xFFFF + 1):
+            break
+
         (cost, angle, movement) = heapq.heappop(queue)
 
         for to_angle, edge in edges_out(graph, angle, movement, cost):
+            if graph[to_angle].best == None:
+                seen += 1
+
             if maybe_add_edge(graph, edge, to_angle):
                 heapq.heappush(queue, (edge.cost, to_angle, edge.movement))
 
