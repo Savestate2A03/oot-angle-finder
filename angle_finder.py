@@ -64,19 +64,19 @@ MOVEMENT_OPTIONS = {
     ],
 }
 BASIC_COSTS = {
-    "ess up": 0.5,
+    "ess up": 0.75,
     "ess left": 0.75,
     "ess right": 0.75,
     "turn left": 1.0,
     "turn right": 1.0,
     "turn 180": 1.0,
-    "sidehop sideroll left": 1.25,
-    "sidehop sideroll right": 1.25,
+    "sidehop sideroll left": 1.0,
+    "sidehop sideroll right": 1.0,
     "ess down sideroll": 1.0,
-    "backflip sideroll": 1.25,
-    "sword spin shield cancel": 1.5,
-    "biggoron slash shield cancel": 1.5,
-    "biggoron spin shield cancel": 1.5,
+    "backflip sideroll": 1.0,
+    "sword spin shield cancel": 1.25,
+    "biggoron slash shield cancel": 1.25,
+    "biggoron spin shield cancel": 1.25,
     "hammer shield cancel": 1.25,
     "shield top-right": 1.0,
     "shield top-left": 1.0,
@@ -84,8 +84,8 @@ BASIC_COSTS = {
     "shield bottom-right": 1.0,
 }
 COST_CHAINS = {
-    ("ess left", "ess left"): 0.15,
-    ("ess right", "ess right"): 0.15,
+    ("ess left", "ess left"): 0.075,
+    ("ess right", "ess right"): 0.075,
 }
 
 
