@@ -102,32 +102,68 @@ def explore(starting_angles):
         for to_angle, edge in edges_out(graph, angle, movement, cost):
             if maybe_add_edge(graph, edge, to_angle):
                 heapq.heappush(queue, (edge.cost, to_angle, edge.movement))
-                # print(f"added {edge} to {to_angle}")
 
     print("\nDone.")
     return graph
 
 
-def navigate_best(graph, to):
-    path = []
-
-    while to is not None:
-        edges = graph[to].edges_in
-        best_edge = min(edges.values(), key=lambda edge: edge.cost)
-
-        path.append((best_edge.movement, to))
-        to = best_edge.from_angle
-
-    path.reverse()
-    return path
+def cost_of_path(path):
+    cost = 0
+    last = None
+    for next in path:
+        cost += COST_TABLE[last][next]
+    return cost
 
 
-def print_path(path):
-    for motion, angle in path:
-        if motion == None:
-            print(f"start at {hex(angle)}")
-        else:
-            print(f"{motion} to {hex(angle)}")
+def navigate_all(graph, angle, path=None, seen=None, flex=COST_FUDGE):
+    if path is None:
+        path = []
+        seen = set()
+
+    node = graph[angle]
+
+    if None in node.edges_in:
+        yield angle, list(reversed(path))
+
+    elif angle in seen:
+        pass
+
+    else:
+        seen.add(angle)
+
+        edges = sorted(node.edges_in.values(), key=lambda e: e.cost)
+        for edge in edges:
+            new_flex = (node.best - edge.cost) + flex
+
+            if new_flex < 0:
+                break
+
+            path.append(edge.movement)
+            yield from navigate_all(graph, edge.from_angle, path, seen, new_flex)
+            path.pop()
+
+        seen.remove(angle)
+
+
+def print_path(angle, path):
+    print(f"start at {hex(angle)}")
+
+    for movement in path:
+        angle = movements.table[movement](angle) & 0xFFFF
+        print(f"{movement} to {hex(angle)}")
+
+
+def collect_paths(graph, angle, sample_size=20, number=10):
+    paths = []
+
+    for angle, path in navigate_all(graph, angle):
+        paths.append((cost_of_path(path), angle, path))
+
+        if len(paths) == sample_size:
+            break
+
+    paths.sort()
+    return paths[:number]
 
 
 COST_TABLE[None] = BASIC_COSTS.copy()
@@ -137,6 +173,11 @@ for (first, then), cost in COST_OVERRIDES.items():
     COST_TABLE[first][then] = cost
 
 
-graph = explore([0x0000, 0xF546])
-print()
-print_path(navigate_best(graph, 0x1234))
+if __name__ == "__main__":
+    graph = explore([0x0000, 0xF546])
+    print()
+
+    for cost, angle, path in collect_paths(graph, 0x1234, sample_size=20, number=10):
+        print(f"cost: {cost}\n-----")
+        print_path(angle, path)
+        print("-----\n")
