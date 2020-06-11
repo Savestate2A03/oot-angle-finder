@@ -63,9 +63,9 @@ MOVEMENT_OPTIONS = {
     ],
 }
 BASIC_COSTS = {
-    "ess up": 0.75,
-    "ess left": 1.0,
-    "ess right": 1.0,
+    "ess up": 0.5,
+    "ess left": 0.75,
+    "ess right": 0.75,
     "turn left": 1.0,
     "turn right": 1.0,
     "turn 180": 1.0,
@@ -83,8 +83,8 @@ BASIC_COSTS = {
     "shield bottom-right": 1.0,
 }
 COST_CHAINS = {
-    ("ess left", "ess left"): 0.25,
-    ("ess right", "ess right"): 0.25,
+    ("ess left", "ess left"): 0.15,
+    ("ess right", "ess right"): 0.15,
 }
 
 
