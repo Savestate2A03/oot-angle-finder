@@ -33,11 +33,11 @@ COST_TABLE = {}
 
 MOVEMENT_OPTIONS = {
     "basic": [
-        "ess up",
         "ess left",
         "ess right",
     ],
     "target enabled": [
+        "ess up",
         "turn left",
         "turn right",
         "turn 180",
