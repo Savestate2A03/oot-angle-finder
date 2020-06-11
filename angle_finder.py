@@ -407,17 +407,20 @@ initialize_cost_table()
 if __name__ == "__main__":
     # Create a graph starting at the given angles.
     graph = explore([0xC000, 0x8000, 0x4000, 0x0000])
+    paths = []
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
     for angle in [0x1702, 0x9999, 0xACAB, 0x1234]:
-        paths = collect_paths(graph, angle, sample_size=50, number=5)
+        paths.extend(collect_paths(graph, angle, sample_size=50, number=5))
 
-        for cost, angle, path in paths:
-            print(f"cost: {cost}\n-----")
-            print_path(angle, path)
-            print("-----\n")
+    paths.sort()
 
-        if len(paths) == 0:
-            print("No way to get to the desired angle!")
-            print("Add some more motions.")
+    for cost, angle, path in paths:
+        print(f"cost: {cost}\n-----")
+        print_path(angle, path)
+        print("-----\n")
+
+    if len(paths) == 0:
+        print("No way to get to the desired angle!")
+        print("Add some more motions.")
