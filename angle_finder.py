@@ -5,7 +5,42 @@ import movements
 
 COST_FUDGE = 3.0
 COST_TABLE = {}
+FILTERED_MOVEMENTS = []
 
+MOVEMENT_OPTIONS = {
+    "basic": [
+        "ess up",
+        "ess left",
+        "ess right",
+    ],
+    "target enabled": [
+        "turn left",
+        "turn right",
+        "turn 180",
+    ],
+    "no carry": [
+        "sidehop sideroll left",
+        "sidehop sideroll right",
+        "ess down sideroll",
+        "backflip sideroll",
+    ],
+    "sword": [
+        "sword spin shield cancel",
+    ],
+    "biggoron": [
+        "biggoron slash shield cancel",
+        "biggoron spin shield cancel",
+    ],
+    "hammer": [
+        "hammer shield cancel",
+    ],
+    "shield corners": [
+        "shield top-right",
+        "shield top-left",
+        "shield bottom-left",
+        "shield bottom-right",
+    ],
+}
 BASIC_COSTS = {
     "ess up": 0.5,
     "ess left": 0.75,
@@ -27,8 +62,8 @@ BASIC_COSTS = {
     "shield bottom-right": 2.0,
 }
 COST_OVERRIDES = {
-    ("ess left", "ess left"): 0.5,
-    ("ess right", "ess right"): 0.5,
+    ("ess left", "ess left"): 0.25,
+    ("ess right", "ess right"): 0.25,
 }
 
 
@@ -67,6 +102,9 @@ def maybe_add_edge(graph, edge, to_angle):
 
 def edges_out(graph, angle, last_movement, last_cost):
     for (movement, cost_increase) in COST_TABLE[last_movement].items():
+        if movement not in FILTERED_MOVEMENTS:
+            continue
+
         new_angle = movements.table[movement](angle)
 
         if new_angle is None:
@@ -128,15 +166,27 @@ def print_path(path):
             print(f"start at {hex(angle)}")
         else:
             print(f"{motion} to {hex(angle)}")
+    print("") # newline
 
+
+def set_movements(movements):
+    global FILTERED_MOVEMENTS
+    FILTERED_MOVEMENTS = []
+    for movement in movements:
+        FILTERED_MOVEMENTS.extend(MOVEMENT_OPTIONS[movement])
+
+set_movements(["basic", "no carry", "target enabled", "hammer"])
 
 COST_TABLE[None] = BASIC_COSTS.copy()
 for movement, cost in BASIC_COSTS.items():
-    COST_TABLE[movement] = BASIC_COSTS.copy()
+    if movement in FILTERED_MOVEMENTS:
+        COST_TABLE[movement] = BASIC_COSTS.copy()
 for (first, then), cost in COST_OVERRIDES.items():
-    COST_TABLE[first][then] = cost
+    if first in FILTERED_MOVEMENTS:
+        COST_TABLE[first][then] = cost
 
+print(FILTERED_MOVEMENTS)
 
-graph = explore([0x0000, 0xF546])
-print()
+graph = explore([0x0000, 0x4000, 0x8000, 0xc000])
+
 print_path(navigate_best(graph, 0x1234))
