@@ -315,7 +315,13 @@ if __name__ == "__main__":
 
     # Collect the 10 fastest sequences of the first 20 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
-    for cost, angle, path in collect_paths(graph, 0x1234, sample_size=20, number=10):
+    paths = collect_paths(graph, 0x1234, sample_size=20, number=10)
+
+    for cost, angle, path in paths:
         print(f"cost: {cost}\n-----")
         print_path(angle, path)
         print("-----\n")
+
+    if len(paths) == 0:
+        print("No way to get to the desired angle!")
+        print("Add some more motions.")
