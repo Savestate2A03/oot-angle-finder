@@ -63,24 +63,24 @@ MOVEMENT_OPTIONS = {
     ],
 }
 BASIC_COSTS = {
-    "ess up": 0.5,
-    "ess left": 0.75,
-    "ess right": 0.75,
+    "ess up": 0.75,
+    "ess left": 1.0,
+    "ess right": 1.0,
     "turn left": 1.0,
     "turn right": 1.0,
     "turn 180": 1.0,
-    "sidehop sideroll left": 1.5,
-    "sidehop sideroll right": 1.5,
-    "ess down sideroll": 1.5,
-    "backflip sideroll": 1.5,
-    "sword spin shield cancel": 2.0,
-    "biggoron slash shield cancel": 2.0,
-    "biggoron spin shield cancel": 2.0,
-    "hammer shield cancel": 2.0,
-    "shield top-right": 2.0,
-    "shield top-left": 2.0,
-    "shield bottom-left": 2.0,
-    "shield bottom-right": 2.0,
+    "sidehop sideroll left": 1.25,
+    "sidehop sideroll right": 1.25,
+    "ess down sideroll": 1.0,
+    "backflip sideroll": 1.25,
+    "sword spin shield cancel": 1.5,
+    "biggoron slash shield cancel": 1.5,
+    "biggoron spin shield cancel": 1.5,
+    "hammer shield cancel": 1.25,
+    "shield top-right": 1.0,
+    "shield top-left": 1.0,
+    "shield bottom-left": 1.0,
+    "shield bottom-right": 1.0,
 }
 COST_CHAINS = {
     ("ess left", "ess left"): 0.25,
@@ -184,8 +184,6 @@ def edges_out(graph, angle, last_motion, last_cost):
         return
 
     for (motion, cost_increase) in COST_TABLE[last_motion].items():
-        if motion not in FILTERED_MOVEMENTS:
-          continue
           
         new_angle = motions.table[motion](angle)
 
@@ -297,6 +295,9 @@ def navigate_all(graph, angle, path=None, seen=None, flex=COST_FLEX):
         edges = sorted(node.edges_in.values(), key=lambda e: e.cost)
 
         for edge in edges:
+            if edge.motion not in FILTERED_MOVEMENTS:
+                continue
+
             new_flex = (node.best - edge.cost) + flex
 
             if new_flex < 0:
@@ -311,11 +312,40 @@ def navigate_all(graph, angle, path=None, seen=None, flex=COST_FLEX):
 
 
 def print_path(angle, path):
+    # keep track of repeated motions to simplify the path reading
+    prev_motion    = None
+    iterations     = 1
+    motions_output = []
+
     print("start at {:#06x}".format(angle))
 
     for motion in path:
+        if prev_motion == motion:
+            # keep track of how many times a motion is repeated
+            iterations += 1
+        elif prev_motion:
+            # once it stops repeating, add it to the motion list
+            motions_output.append({
+                "motion": f"{iterations} {prev_motion}",
+                "angle":  f"0x{angle:04x}"
+            })
+            iterations = 1
+
+        # update the angle using the current motion and set prev_motion
         angle = motions.table[motion](angle) & 0xFFFF
-        print("{:28} to {:#06x}".format(motion, angle))
+        prev_motion = motion
+
+    # finally, run one last time
+    motions_output.append({
+        "motion": f"{iterations} {prev_motion}",
+        "angle":  f"0x{angle:04x}"
+    })
+
+    # get the padding amount based on the length for the largest motion string
+    text_length = len(max([output['motion'] for output in motions_output], key=len))
+    for motion in motions_output:
+        # print out each motion
+        print(f"{motion['motion']:<{text_length}} to {motion['angle']}")
 
 
 def collect_paths(graph, angle, sample_size=20, number=10):
@@ -345,32 +375,36 @@ def set_movements(movements):
     for movement in movements:
         FILTERED_MOVEMENTS.extend(MOVEMENT_OPTIONS[movement])
 
-set_movements(["basic", "no carry", "target enabled", "hammer"])
 
 COST_TABLE[None] = BASIC_COSTS.copy()
 for motion, cost in BASIC_COSTS.items():
-    if motion in FILTERED_MOVEMENTS:
-        COST_TABLE[motion] = BASIC_COSTS.copy()
+    COST_TABLE[motion] = BASIC_COSTS.copy()
 for (first, then), cost in COST_CHAINS.items():
-    if first in FILTERED_MOVEMENTS:
-        COST_TABLE[first][then] = cost
+    COST_TABLE[first][then] = cost
 
-graph = explore([0x0000, 0x4000, 0x8000, 0xc000])
 
 if __name__ == "__main__":
     # Create a graph starting at the given angles.
-    graph = explore([0x0000, 0xF546])
+    graph = explore([0xc000, 0x8000, 0x4000, 0x0000])
     print()
 
-    # Collect the 10 fastest sequences of the first 20 visited.  The fastest
+    set_movements(["basic", "no carry", "target enabled", "hammer"])
+
+    # set_movements([
+    #    "basic", "target enabled", "no carry",
+    #    "sword", "biggoron", "hammer", "shield corners" 
+    # ])
+
+    # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
-    paths = collect_paths(graph, 0x1234, sample_size=20, number=10)
+    for angle in [0x1702, 0x9999, 0xacab, 0x1234]:
+        paths = collect_paths(graph, angle, sample_size=50, number=5)
 
-    for cost, angle, path in paths:
-        print(f"cost: {cost}\n-----")
-        print_path(angle, path)
-        print("-----\n")
+        for cost, angle, path in paths:
+            print(f"cost: {cost}\n-----")
+            print_path(angle, path)
+            print("-----\n")
 
-    if len(paths) == 0:
-        print("No way to get to the desired angle!")
-        print("Add some more motions.")
+        if len(paths) == 0:
+            print("No way to get to the desired angle!")
+            print("Add some more motions.")
