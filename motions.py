@@ -66,7 +66,8 @@ except:
             camera_angles.append(int(line.strip(), 16))
 
     for angle in range(0xFFFF + 1):
-        print(f"Caching camera movements ({hex(angle)})...", end="\r")
+        if (angle % 0x1000) == 0:
+            print(f"Caching camera movements ({hex(angle)})...", end="\r")
         CAMERA_SNAPS.append(ess_up_adjust_noncached(angle))
     print("\nDone.")
 

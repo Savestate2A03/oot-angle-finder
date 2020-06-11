@@ -1,5 +1,6 @@
 import collections
 import heapq
+from decimal import *
 
 import motions
 
@@ -25,8 +26,9 @@ import motions
 #
 # Go to the bottom of this file to select angles and run the search.
 
+getcontext().prec = 4 # Decimal to 4 places
 
-COST_FLEX = 3.0
+COST_FLEX = Decimal(3.0)
 COST_TABLE = {}
 
 MOVEMENT_OPTIONS = {
@@ -64,28 +66,28 @@ MOVEMENT_OPTIONS = {
     ],
 }
 BASIC_COSTS = {
-    "ess up": 0.75,
-    "ess left": 0.75,
-    "ess right": 0.75,
-    "turn left": 1.0,
-    "turn right": 1.0,
-    "turn 180": 1.0,
-    "sidehop sideroll left": 1.0,
-    "sidehop sideroll right": 1.0,
-    "ess down sideroll": 1.0,
-    "backflip sideroll": 1.0,
-    "sword spin shield cancel": 1.25,
-    "biggoron slash shield cancel": 1.25,
-    "biggoron spin shield cancel": 1.25,
-    "hammer shield cancel": 1.25,
-    "shield top-right": 1.0,
-    "shield top-left": 1.0,
-    "shield bottom-left": 1.0,
-    "shield bottom-right": 1.0,
+    "ess up": Decimal(0.75),
+    "ess left": Decimal(0.75),
+    "ess right": Decimal(0.75),
+    "turn left": Decimal(1.0),
+    "turn right": Decimal(1.0),
+    "turn 180": Decimal(1.0),
+    "sidehop sideroll left": Decimal(1.0),
+    "sidehop sideroll right": Decimal(1.0),
+    "ess down sideroll": Decimal(1.0),
+    "backflip sideroll": Decimal(1.0),
+    "sword spin shield cancel": Decimal(1.25),
+    "biggoron slash shield cancel": Decimal(1.25),
+    "biggoron spin shield cancel": Decimal(1.25),
+    "hammer shield cancel": Decimal(1.25),
+    "shield top-right": Decimal(1.0),
+    "shield top-left": Decimal(1.0),
+    "shield bottom-left": Decimal(1.0),
+    "shield bottom-right": Decimal(1.0),
 }
 COST_CHAINS = {
-    ("ess left", "ess left"): 0.075,
-    ("ess right", "ess right"): 0.075,
+    ("ess left", "ess left"): Decimal(0.075),
+    ("ess right", "ess right"): Decimal(0.075),
 }
 
 
@@ -209,23 +211,22 @@ def explore(starting_angles):
         best = 0
 
         graph[angle] = Node(edges_in, best)
-        heapq.heappush(queue, (0.0, angle, None))
+        heapq.heappush(queue, (Decimal(0.0), angle, None))
         seen += 1
 
-    should_print = 0  # only print status every 100 iterations
+    previous_cost = 0  # only print status when cost increases
 
     while len(queue) > 0:
-        if should_print == 0:
-            print(f"Exploring ({len(queue)})...", end="\r")
-            should_print = 100
-        should_print -= 1
-
         if seen == (0xFFFF + 1):
             # have encountered all nodes, exit early
             # misses some valid edges, but it doesn't seem to matter much
             break
 
         (cost, angle, motion) = heapq.heappop(queue)
+
+        if cost > previous_cost + Decimal(1.0):
+            print(f"Exploring ({len(queue)}), current cost at {cost}", end="\r")
+            previous_cost = cost
 
         for to_angle, edge in edges_out(graph, angle, motion, cost):
             if graph[to_angle].best == None:
@@ -388,13 +389,22 @@ def initialize_cost_table():
 
 ALLOWED_GROUPS = ["basic", "no carry", "target enabled", "hammer"]
 
+# ALLOWED_GROUPS = [
+#     "basic",
+#     "target enabled",
+#     "no carry",
+#     "sword",
+#     "biggoron",
+#     "hammer",
+#     "shield corners"
+# ]
+
 initialize_cost_table()
 
 
 if __name__ == "__main__":
     # Create a graph starting at the given angles.
     graph = explore([0xC000, 0x8000, 0x4000, 0x0000])
-    print()
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
