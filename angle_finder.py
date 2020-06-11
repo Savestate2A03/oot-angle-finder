@@ -82,7 +82,7 @@ BASIC_COSTS = {
     "shield bottom-left": 2.0,
     "shield bottom-right": 2.0,
 }
-COST_OVERRIDES = {
+COST_CHAINS = {
     ("ess left", "ess left"): 0.25,
     ("ess right", "ess right"): 0.25,
 }
@@ -184,7 +184,7 @@ def edges_out(graph, angle, last_motion, last_cost):
         return
 
     for (motion, cost_increase) in COST_TABLE[last_motion].items():
-        if movement not in FILTERED_MOVEMENTS:
+        if motion not in FILTERED_MOVEMENTS:
           continue
           
         new_angle = motions.table[motion](angle)
@@ -349,7 +349,7 @@ set_movements(["basic", "no carry", "target enabled", "hammer"])
 
 COST_TABLE[None] = BASIC_COSTS.copy()
 for motion, cost in BASIC_COSTS.items():
-    if movement in FILTERED_MOVEMENTS:
+    if motion in FILTERED_MOVEMENTS:
         COST_TABLE[motion] = BASIC_COSTS.copy()
 for (first, then), cost in COST_CHAINS.items():
     if first in FILTERED_MOVEMENTS:
