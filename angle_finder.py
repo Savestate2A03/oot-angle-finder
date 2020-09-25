@@ -181,7 +181,7 @@ def maybe_add_edge(graph, edge, to_angle, avoid_angles):
         graph[to_angle] = Node(edges_in, best)
 
     for avoid_range in avoid_angles:
-        if avoid_range[0] < edge.from_angle and avoid_range[1] > edge.from_angle:
+        if avoid_range[0] <= edge.from_angle and avoid_range[1] >= edge.from_angle:
             if TARGET_BEFORE[edge.motion]:
                 # not an allowed motion based on the avoid params
                 return False
