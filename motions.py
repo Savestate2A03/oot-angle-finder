@@ -6,9 +6,13 @@ def ess_up_adjust_noncached(angle):
 
     # camera bullshit as determined by manual testing
 
-    # don't bother, these just snap to 0x4000 and 0x8000
-    if (0x385F <= angle < 0x4000) or (0x794F <= angle < 0x8000):
-        return False
+    # these snap to 0x4000
+    if (0x385F <= angle < 0x4000):
+        return 0x4000
+
+    # these snap to 0x8000
+    if (0x794F <= angle < 0x8000):
+        return 0x8000
 
     # these snap to 0xc001
     if 0xBEBF <= angle < 0xC001:
@@ -187,10 +191,10 @@ def shield_bottomright(angle):
 
 table = {
     "ess up": ess_up_adjust,
-    "ess left": ess_left,
     "ess right": ess_right,
-    "turn left": turn_left,
+    "ess left": ess_left,
     "turn right": turn_right,
+    "turn left": turn_left,
     "turn 180": turn_180,
     "sidehop sideroll left": sidehop_sideroll_left,
     "sidehop sideroll right": sidehop_sideroll_right,

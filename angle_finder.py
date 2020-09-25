@@ -35,13 +35,13 @@ COST_TABLE = {}
 
 MOVEMENT_OPTIONS = {
     "basic": [
-        "ess left",
         "ess right",
+        "ess left",
     ],
     "target enabled": [
         "ess up",
-        "turn left",
         "turn right",
+        "turn left",
         "turn 180",
     ],
     "no carry": [
@@ -90,6 +90,26 @@ BASIC_COSTS = {
 COST_CHAINS = {
     ("ess left", "ess left"): Decimal(0.075),
     ("ess right", "ess right"): Decimal(0.075),
+}
+TARGET_BEFORE = {
+    "ess up": True,
+    "ess left": False,
+    "ess right": False,
+    "turn left": True,
+    "turn right": True,
+    "turn 180": True,
+    "sidehop sideroll left": False,
+    "sidehop sideroll right": False,
+    "ess down sideroll": False,
+    "backflip sideroll": False,
+    "sword spin shield cancel": False,
+    "biggoron slash shield cancel": False,
+    "biggoron spin shield cancel": False,
+    "hammer shield cancel": False,
+    "shield top-right": True,
+    "shield top-left": True,
+    "shield bottom-left": True,
+    "shield bottom-right": True,
 }
 
 
@@ -141,7 +161,7 @@ Edge = collections.namedtuple("Edge", ["from_angle", "motion", "cost"])
 empty_node = lambda: Node(edges_in={}, best=None)
 
 
-def maybe_add_edge(graph, edge, to_angle):
+def maybe_add_edge(graph, edge, to_angle, avoid_angles):
     """
     Add an edge to an angle, but only if the edge is the fastest way to get to
     the node for a given motion.
@@ -159,6 +179,12 @@ def maybe_add_edge(graph, edge, to_angle):
         edges_in[edge.motion] = edge
         best = min_none(to_node.best, edge.cost)
         graph[to_angle] = Node(edges_in, best)
+
+    for avoid_range in avoid_angles:
+        if avoid_range[0] < edge.from_angle and avoid_range[1] > edge.from_angle:
+            if TARGET_BEFORE[edge.motion]:
+                # not an allowed motion based on the avoid params
+                return False
 
     if to_node.best == None:
         add_edge()  # first edge to the node
@@ -201,7 +227,7 @@ def edges_out(graph, angle, last_motion, last_cost):
         yield (to_angle, Edge(from_angle, motion, cost))
 
 
-def explore(starting_angles):
+def explore(starting_angles, avoid_angles):
     """Produce a graph from the given starting angles."""
 
     graph = [empty_node() for _ in range(0xFFFF + 1)]
@@ -234,7 +260,7 @@ def explore(starting_angles):
             if graph[to_angle].best == None:
                 seen += 1
 
-            if maybe_add_edge(graph, edge, to_angle):
+            if maybe_add_edge(graph, edge, to_angle, avoid_angles):
                 # this is a new or cheaper edge, explore from here
                 heapq.heappush(queue, (edge.cost, to_angle, edge.motion))
 
@@ -389,7 +415,7 @@ def initialize_cost_table():
             del COST_TABLE[first][motion]
 
 
-ALLOWED_GROUPS = ["basic", "no carry", "target enabled", "hammer"]
+ALLOWED_GROUPS = ["basic", "target enabled"]
 
 # ALLOWED_GROUPS = [
 #     "basic",
@@ -403,16 +429,35 @@ ALLOWED_GROUPS = ["basic", "no carry", "target enabled", "hammer"]
 
 initialize_cost_table()
 
+  #  #  #  #    #  #  #  #  
+# c  d  e  f    0
 
 if __name__ == "__main__":
+
+    avoid = [
+    # examples, also note that when crossing
+    # 0x0000 -> 0xffff, you have to split it up.
+
+    #    (0xdeb9, 0xffff),
+    #    (0x0000, 0x6338)
+    ]
+
     # Create a graph starting at the given angles.
-    graph = explore([0xC000, 0x8000, 0x4000, 0x0000])
+    graph = explore([
+        0x0000, 0xc000, 0x4000, 0x8000 
+    ], avoid)
+
     paths = []
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
-    for angle in [0x1702, 0x9999, 0xACAB, 0x1234]:
-        paths.extend(collect_paths(graph, angle, sample_size=50, number=5))
+    for angle in [
+        0x1234,
+        0xabcd,
+        0xacab,
+        0x8888,
+    ]:
+        paths.extend(collect_paths(graph, angle, sample_size=50, number=2))
 
     paths.sort()
 
