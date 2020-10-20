@@ -55,7 +55,8 @@ MOVEMENT_OPTIONS = {
     ],
     "biggoron": [
         "biggoron slash shield cancel",
-        "biggoron spin shield cancel",
+        "biggoron slowspin shield cancel",
+        "biggoron quickspin shield cancel",
     ],
     "hammer": [
         "hammer shield cancel",
@@ -79,8 +80,9 @@ BASIC_COSTS = {
     "ess down sideroll": Decimal(1.0),
     "backflip sideroll": Decimal(1.0),
     "sword spin shield cancel": Decimal(1.25),
-    "biggoron slash shield cancel": Decimal(1.25),
-    "biggoron spin shield cancel": Decimal(1.25),
+    "biggoron slash shield cancel": Decimal(1),
+    "biggoron slowspin shield cancel": Decimal(1.25),
+    "biggoron quickspin shield cancel": Decimal(1.25),
     "hammer shield cancel": Decimal(1.25),
     "shield top-right": Decimal(1.0),
     "shield top-left": Decimal(1.0),
@@ -102,7 +104,8 @@ TARGET_BEFORE = {
     "sidehop sideroll right": False,
     "ess down sideroll": False,
     "backflip sideroll": False,
-    "sword spin shield cancel": False,
+    "sword slowspin shield cancel": False,
+    "sword quickspin shield cancel": False,
     "biggoron slash shield cancel": False,
     "biggoron spin shield cancel": False,
     "hammer shield cancel": False,
@@ -415,7 +418,7 @@ def initialize_cost_table():
             del COST_TABLE[first][motion]
 
 
-ALLOWED_GROUPS = ["basic", "target enabled"]
+ALLOWED_GROUPS = ["basic",  "target enabled", "no carry", "biggoron", "hammer"]
 
 # ALLOWED_GROUPS = [
 #     "basic",
@@ -429,35 +432,31 @@ ALLOWED_GROUPS = ["basic", "target enabled"]
 
 initialize_cost_table()
 
-  #  #  #  #    #  #  #  #  
-# c  d  e  f    0
-
 if __name__ == "__main__":
 
     avoid = [
-    # examples, also note that when crossing
-    # 0x0000 -> 0xffff, you have to split it up.
-
+    #    examples, also note that when crossing
+    #    0x0000 -> 0xffff, you have to split it up.
+    #
     #    (0xdeb9, 0xffff),
     #    (0x0000, 0x6338)
     ]
 
     # Create a graph starting at the given angles.
     graph = explore([
-        0x0000, 0xc000, 0x4000, 0x8000 
+        0x0000, 0x4000, 0x8000, 0xc000
     ], avoid)
-
     paths = []
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
-    for angle in [
+    for angle in [ 
         0x1234,
         0xabcd,
         0xacab,
         0x8888,
-    ]:
-        paths.extend(collect_paths(graph, angle, sample_size=50, number=2))
+     ]:
+        paths.extend(collect_paths(graph, angle, sample_size=30, number=4))
 
     paths.sort()
 
