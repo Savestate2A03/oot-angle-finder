@@ -421,18 +421,15 @@ def initialize_cost_table():
         for motion in disallowed_motions:
             del COST_TABLE[first][motion]
 
-
-ALLOWED_GROUPS = ["basic",  "target enabled", "no carry", "sword", "hammer"]
-
-# ALLOWED_GROUPS = [
-#     "basic",
-#     "target enabled",
-#     "no carry",
-#     "sword",
-#     "biggoron",
-#     "hammer",
-#     "shield corners"
-# ]
+ALLOWED_GROUPS = [
+     "basic",
+     "target enabled",
+     "no carry",
+     "sword",
+     "biggoron",
+     "hammer",
+     "shield corners"
+]
 
 initialize_cost_table()
 
