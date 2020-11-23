@@ -3,6 +3,10 @@ import heapq
 import sys
 from decimal import *
 
+import tkinter as tk
+from tkinter import scrolledtext
+from tkinter import ttk
+
 import motions
 
 
@@ -418,7 +422,7 @@ def initialize_cost_table():
             del COST_TABLE[first][motion]
 
 
-ALLOWED_GROUPS = ["basic",  "target enabled", "no carry", "biggoron", "hammer"]
+ALLOWED_GROUPS = ["basic",  "target enabled", "no carry", "sword", "hammer"]
 
 # ALLOWED_GROUPS = [
 #     "basic",
@@ -434,6 +438,139 @@ initialize_cost_table()
 
 if __name__ == "__main__":
 
+    window = tk.Tk()
+    window.rowconfigure([0], weight=1)
+    window.rowconfigure([1], weight=0)
+    window.columnconfigure([0], weight=1)
+
+    window.title("OoT Angle Finding Tool")
+    photo = tk.PhotoImage(file = "spin2.png")
+    window.iconphoto(False, photo)
+
+    main_area = tk.Frame(
+        master=window
+    )
+    main_area.rowconfigure([0], weight=1)
+    main_area.columnconfigure([0, 1], weight=1)
+    main_area.grid(row=0, column=0, sticky="nsew")
+
+    menu_bar = tk.Frame(
+        master=window
+    )
+    menu_bar.rowconfigure([0], weight=1)
+    menu_bar.columnconfigure([0,1,2,3,4], weight=1)
+    menu_bar.grid(row=1, column=0, sticky="nsew")
+
+    angle_input_frame = tk.Frame(
+        master=main_area
+    )
+    angle_input_frame.rowconfigure([0], minsize=10, weight=0)
+    angle_input_frame.rowconfigure([1], minsize=10, weight=1)
+    angle_input_frame.columnconfigure([0, 1, 2, 3], minsize=15, weight=1)
+    angle_input_frame.grid(row=0, column=0, sticky="nsew")
+
+    # Starting Angles
+    label = tk.Label(
+        text="Starting Angles", 
+        width=12, height=2,
+        master=angle_input_frame,
+    )
+    label.grid(row=0, column=0)
+    text_box_start = tk.scrolledtext.ScrolledText(
+        width=16, height=15,
+        master=angle_input_frame,
+    )
+    text_box_start.grid(row=1, column=0, sticky="nsew")
+
+    # Desired Angles
+    label = tk.Label(
+        text="Desired Angles", 
+        width=12, height=2,
+        master=angle_input_frame,
+    )
+    label.grid(row=0, column=1)
+    text_box_desired = tk.scrolledtext.ScrolledText(
+        width=16, height=15,
+        master=angle_input_frame,
+    )
+    text_box_desired.grid(row=1, column=1, sticky="nsew")
+
+    # Avoid Angles
+    label = tk.Label(
+        text="Avoid Angles", 
+        width=12, height=2,
+        master=angle_input_frame,
+    )
+    label.grid(row=0, column=2)
+    text_box_avoid = tk.scrolledtext.ScrolledText(
+        width=16, height=15,
+        master=angle_input_frame,
+    )
+    text_box_avoid.grid(row=1, column=2, sticky="nsew")
+
+    # Allowed Movements
+    label = tk.Label(
+        text="Movements", 
+        width=15, height=2,
+        master=angle_input_frame,
+    )
+    label.grid(row=0, column=3)
+    motions_frame = tk.Frame(
+        master=angle_input_frame
+    )
+    motions_frame.grid(row=1, column=3, sticky="nsew")
+    for index in range(len(ALLOWED_GROUPS)):
+        tk.Checkbutton(
+            master=motions_frame, 
+            text=ALLOWED_GROUPS[index]
+        ).grid(row=index+1, sticky="w")
+
+    # Results Area
+    text_box_results = tk.scrolledtext.ScrolledText(
+        width=40, height=15,
+        master=main_area,
+    )
+    text_box_results.insert('0.0', "results will go here ...")
+    text_box_results.grid(row=0, column=1, sticky="nsew")
+
+    # Function Bar
+    search_button = tk.Button(
+        master=menu_bar, 
+        text="Search",
+        width=8
+    )
+    search_button.grid(row=0, column=0, sticky="wnse")
+
+    # Workspaces
+    label = tk.Label(
+        text="Workspace:", 
+        master=menu_bar,
+        anchor="e",
+        width=10
+    )
+    label.grid(row=0, column=1, sticky="wnse")
+    opt = tk.ttk.Combobox(
+        text="Test",
+        master=menu_bar,
+    )
+    opt.grid(row=0, column=2, sticky="wnse")
+    add_button = tk.Button(
+        master=menu_bar, 
+        text="Save",
+    )
+    add_button.grid(row=0, column=3, sticky="wnse")
+    sub_button = tk.Button(
+        master=menu_bar, 
+        text="Remove",
+    )
+    sub_button.grid(row=0, column=4, sticky="wnse")
+
+
+
+    window.mainloop()
+
+else:
+
     avoid = [
     #    examples, also note that when crossing
     #    0x0000 -> 0xffff, you have to split it up.
@@ -444,17 +581,14 @@ if __name__ == "__main__":
 
     # Create a graph starting at the given angles.
     graph = explore([
-        0x0000, 0x4000, 0x8000, 0xc000
+        0x0000, 0x4000, 0x8000, 0xc000, 0xa000, 0x6024, 0xe024, 0xfd6b, 0x2009
     ], avoid)
     paths = []
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
     for angle in [ 
-        0x1234,
-        0xabcd,
-        0xacab,
-        0x8888,
+        0x0603
      ]:
         paths.extend(collect_paths(graph, angle, sample_size=30, number=4))
 
