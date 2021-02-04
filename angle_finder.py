@@ -55,7 +55,6 @@ MOVEMENT_OPTIONS = {
     ],
     "biggoron": [
         "biggoron slash shield cancel",
-        "biggoron slowspin shield cancel",
         "biggoron quickspin shield cancel",
     ],
     "hammer": [
@@ -81,7 +80,6 @@ BASIC_COSTS = {
     "backflip sideroll": Decimal(1.0),
     "sword spin shield cancel": Decimal(1.25),
     "biggoron slash shield cancel": Decimal(1),
-    "biggoron slowspin shield cancel": Decimal(1.25),
     "biggoron quickspin shield cancel": Decimal(1.25),
     "hammer shield cancel": Decimal(1.25),
     "shield top-right": Decimal(1.0),
@@ -104,7 +102,6 @@ TARGET_BEFORE = {
     "sidehop sideroll right": False,
     "ess down sideroll": False,
     "backflip sideroll": False,
-    "sword slowspin shield cancel": False,
     "sword quickspin shield cancel": False,
     "biggoron slash shield cancel": False,
     "biggoron spin shield cancel": False,

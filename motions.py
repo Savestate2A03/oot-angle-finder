@@ -152,10 +152,6 @@ def biggoron_slash_shield_cancel(angle):
     return angle + 0x1219
 
 
-def biggoron_slowspin_shield_cancel(angle):
-    return angle + 0x04F5
-
-
 def biggoron_quickspin_shield_cancel(angle):
     return angle - 0x0D24
 
@@ -207,7 +203,6 @@ table = {
     "backflip sideroll": backflip_sideroll,
     "sword spin shield cancel": sword_spin_shield_cancel,
     "biggoron slash shield cancel": biggoron_slash_shield_cancel,
-    "biggoron slowspin shield cancel": biggoron_slowspin_shield_cancel,
     "biggoron quickspin shield cancel": biggoron_quickspin_shield_cancel,
     "hammer shield cancel": hammer_shield_cancel,
     "shield top-right": shield_topright,
