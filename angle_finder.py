@@ -447,12 +447,35 @@ if __name__ == "__main__":
 
     # Collect the 5 fastest sequences of the first 50 visited.  The fastest
     # sequence collected is at least tied as the fastest sequence overall.
-    for angle in [ 
-        0x1234,
-        0xabcd,
-        0xacab,
-        0x8888,
-     ]:
+
+    # PASTE IN YOUR HEX ANGLES BETWEEN angles = """ """
+    # Example:
+    #
+    #     angles = """
+    # 0100
+    # 0124
+    # 0144
+    # 0205
+    # 0333
+    #     """
+    #
+    # make sure the first line (angles = """)
+    # and last line (""") are indented properly!
+    # four spaces to the left of each.
+
+    angles = """
+1234
+3333
+acab
+9876
+0dad
+    """
+
+    for line in angles.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        angle = int(line, 16)
         paths.extend(collect_paths(graph, angle, sample_size=30, number=4))
 
     paths.sort()
