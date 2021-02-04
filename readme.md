@@ -1,4 +1,5 @@
 # Ocarina of Time Angle Finder 
+Find the quickest path between any two angles in Ocarina of Time with a graph search.
 
 # Usage
 
