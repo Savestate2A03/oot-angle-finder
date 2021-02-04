@@ -1,5 +1,4 @@
-# Public Release 1.0
-First public release for the angle finder tool.
+# Ocarina of Time Angle Finder 
 
 # Usage
 
