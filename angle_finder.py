@@ -66,6 +66,10 @@ MOVEMENT_OPTIONS = {
         "shield bottom-left",
         "shield bottom-right",
     ],
+    "c-up frame turn": [
+        "c-up frame turn left",
+        "c-up frame turn right",
+    ],
 }
 BASIC_COSTS = {
     "ess up": Decimal(0.75),
@@ -86,10 +90,14 @@ BASIC_COSTS = {
     "shield top-left": Decimal(1.0),
     "shield bottom-left": Decimal(1.0),
     "shield bottom-right": Decimal(1.0),
+    "c-up frame turn left": Decimal(1.25),
+    "c-up frame turn right": Decimal(1.25),
 }
 COST_CHAINS = {
     ("ess left", "ess left"): Decimal(0.075),
     ("ess right", "ess right"): Decimal(0.075),
+    ("c-up frame turn left", "c-up frame turn left"): Decimal(0.25),
+    ("c-up frame turn right", "c-up frame turn right"): Decimal(0.25),
 }
 TARGET_BEFORE = {
     "ess up": True,
@@ -110,6 +118,8 @@ TARGET_BEFORE = {
     "shield top-left": True,
     "shield bottom-left": True,
     "shield bottom-right": True,
+    "c-up frame turn left": False,
+    "c-up frame turn right": False,
 }
 
 
@@ -415,7 +425,7 @@ def initialize_cost_table():
             del COST_TABLE[first][motion]
 
 
-ALLOWED_GROUPS = ["basic",  "target enabled", "no carry", "biggoron", "hammer"]
+ALLOWED_GROUPS = ["basic", "target enabled", "no carry", "c-up frame turn"]
 
 # ALLOWED_GROUPS = [
 #     "basic",
@@ -424,7 +434,8 @@ ALLOWED_GROUPS = ["basic",  "target enabled", "no carry", "biggoron", "hammer"]
 #     "sword",
 #     "biggoron",
 #     "hammer",
-#     "shield corners"
+#     "shield corners",
+#     "c-up frame turn"
 # ]
 
 initialize_cost_table()
@@ -464,11 +475,10 @@ if __name__ == "__main__":
     # four spaces to the left of each.
 
     angles = """
-1234
-3333
-acab
-9876
+0bad
 0dad
+acab
+1234
     """
 
     for line in angles.splitlines():
@@ -476,7 +486,7 @@ acab
         if not line:
             continue
         angle = int(line, 16)
-        paths.extend(collect_paths(graph, angle, sample_size=30, number=4))
+        paths.extend(collect_paths(graph, angle, sample_size=35, number=4))
 
     paths.sort()
 

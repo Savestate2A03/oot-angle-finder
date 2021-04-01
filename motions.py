@@ -189,6 +189,11 @@ def shield_bottomright(angle):
         return None
     return angle - 0x6000
 
+def cup_frameturnleft(angle):
+    return angle + 0x12c
+
+def cup_frameturnright(angle):
+    return angle - 0x12c
 
 table = {
     "ess up": ess_up_adjust,
@@ -209,4 +214,6 @@ table = {
     "shield top-left": shield_topleft,
     "shield bottom-left": shield_bottomleft,
     "shield bottom-right": shield_bottomright,
+    "c-up frame turn left": cup_frameturnleft,
+    "c-up frame turn right": cup_frameturnright,
 }
